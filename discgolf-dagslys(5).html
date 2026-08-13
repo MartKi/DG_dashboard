@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spilbarhed · Dagslys</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#F2F4F7">
+<style>
+
+  :root{
+    --paper:#EEF1F6; --card:#FFFFFF; --field:#F3F5F9; --track:#E7EBF1;
+    --ink:#111826; --ink-soft:#6B7688; --line:#E3E8EF;
+    --accent:#5A6BF0; --on-accent:#FFFFFF; --chain:#A8B2C4;
+    --s1:#12996B; --s2:#4FA83C; --s3:#D79A00; --s4:#E05545; --s5:#A63E33;
+    --uv1:#289500; --uv2:#F7E400; --uv3:#F85900; --uv4:#D8001D; --uv5:#6B49C8;
+    --r:26px;
+    --sh:0 1px 2px rgba(17,24,38,.05), 0 10px 26px -16px rgba(17,24,38,.28);
+  }
+  body{background:var(--paper)}
+  .card{background:var(--card);border:0;border-radius:var(--r);padding:22px;margin-bottom:14px;box-shadow:var(--sh)}
+  .factor + .factor{border-top:1px solid var(--line)}
+  .hr{background:var(--field)}
+  .hr.best{background:#EBEDFE;box-shadow:inset 0 0 0 1.5px var(--accent)}
+  .hr.now{box-shadow:inset 0 0 0 2px var(--ink)}
+  .course.sel{background:#EBEDFE;box-shadow:inset 0 0 0 1.5px var(--accent)}
+  .chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  button:hover{background:#E9EDF5}
+  button.primary:hover{background:#4757E0}
+  .err{color:var(--s4)}
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+       font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:env(safe-area-inset-bottom)}
+  .wrap{max-width:720px;margin:0 auto;padding:20px 16px 72px}
+  h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
+  h1{font-size:28px;line-height:1.15}
+  h2{font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--ink-soft);margin-bottom:14px;text-transform:none}
+  .mono{font-variant-numeric:tabular-nums}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:6px 4px 18px;flex-wrap:wrap}
+  .sub{font-size:12.5px;color:var(--ink-soft);font-weight:500}
+  .loc{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  #searchResults{margin-top:8px}
+  input[type=text]{font:inherit;padding:11px 16px;border:1px solid var(--line);border-radius:999px;background:var(--field);color:var(--ink);min-width:180px;flex:1}
+  input[type=text]::placeholder{color:var(--ink-soft)}
+  input:focus-visible,button:focus-visible,.chip:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button{font:inherit;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--field);color:var(--ink);
+         padding:11px 18px;border-radius:999px;transition:transform .12s ease,background .15s ease}
+  button:active{transform:scale(.97)}
+  button.primary{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+  .gauge svg{width:100%;height:auto;display:block;overflow:visible;margin-top:6px}
+  .pct{font-size:76px;font-weight:800;line-height:.9;letter-spacing:-.045em;font-variant-numeric:tabular-nums}
+  .pct span{font-size:26px;font-weight:600;vertical-align:super;letter-spacing:-.01em;margin-left:1px}
+  .headline{font-size:21px;font-weight:700;letter-spacing:-.02em}
+  #forWhat{font-size:12.5px;color:var(--ink-soft);margin-top:3px;font-variant-numeric:tabular-nums}
+  .whyline{color:var(--ink-soft);font-size:14px;margin-top:12px;line-height:1.45}
+  .factor{display:grid;grid-template-columns:1fr auto;gap:9px 12px;align-items:center;padding:15px 0}
+  .flabel{grid-column:1;grid-row:1;font-size:14.5px}
+  .fval{grid-column:2;grid-row:1;justify-self:end}
+  .bar{grid-column:1/3;grid-row:2}
+  .fnote{grid-column:1/3;grid-row:3}
+  .flabel{font-size:14px;font-weight:600}
+  .bar{height:9px;background:var(--track);border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:999px;transition:width .5s cubic-bezier(.22,.8,.28,1)}
+  .fval{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .fnote{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-top:-1px}
+  .strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none;scroll-snap-type:x proximity}
+  .strip::-webkit-scrollbar{display:none}
+  .hr{flex:0 0 72px;border-radius:20px;padding:11px 7px 12px;text-align:center;scroll-snap-align:start}
+  .hr .t{font-size:12px;font-weight:600;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .hr .sc{font-size:23px;font-weight:800;line-height:1.15;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .hr .sb{height:4px;border-radius:999px;margin:5px 3px 8px}
+  .hr .row{font-size:11px;color:var(--ink-soft);line-height:1.45;font-variant-numeric:tabular-nums}
+  .hr .temp{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .arrow{display:inline-block;font-size:12px;line-height:1}
+  .uvchip{display:inline-block;min-width:22px;padding:2px 6px;border-radius:999px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+  #bestWindow{font-size:13.5px;line-height:1.5}
+  .course{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:13px 12px;border-radius:16px;margin-bottom:6px;background:var(--field)}
+  .course button{padding:8px 14px;font-size:13px}
+  .cname{font-weight:600;font-size:15px}
+  .cmeta{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+  .tag{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;background:var(--track);color:var(--ink-soft);margin-left:6px;vertical-align:middle}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font:inherit;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--field);color:var(--ink-soft);cursor:pointer}
+  ul.tips{margin:0;padding-left:0;list-style:none}
+  ul.tips li{margin-bottom:12px;padding-left:16px;position:relative;line-height:1.5;font-size:14px}
+  ul.tips li:last-child{margin-bottom:0}
+  ul.tips li:before{content:"";position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:999px;background:var(--accent)}
+  details{font-size:13.5px;color:var(--ink-soft)}
+  details summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--ink);list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary:after{content:" +";color:var(--ink-soft)}
+  details[open] summary:after{content:" 2"}
+  details p,details li{line-height:1.6}
+  .muted,.status{color:var(--ink-soft);font-size:13px}
+  footer{font-size:11.5px;color:var(--ink-soft);text-align:center;margin-top:24px;line-height:1.7}
+  .hidden{display:none !important}
+  @media (max-width:520px){ h1{font-size:24px} }
+  @media (prefers-reduced-motion:no-preference){
+    .prog{transition:stroke-dasharray .7s cubic-bezier(.22,.8,.28,1),stroke .4s linear}
+    .card{animation:rise .45s cubic-bezier(.22,.8,.28,1) both}
+    @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  }
+
+  .cardhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+  .cardhead button{padding:8px 14px;font-size:13px}
+  .day{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;
+       background:var(--field);border:0;border-radius:18px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+  .day:hover{background:#E9EDF5}
+  .day.sel{background:#EBEDFE;box-shadow:inset 0 0 0 1.5px var(--accent)}
+  .dhead{display:flex;flex-direction:column;line-height:1.25}
+  .dn{font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .dd{font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .spark{display:flex;align-items:flex-end;gap:2px;height:30px}
+  .spark i{flex:1;border-radius:3px;opacity:.85;min-width:2px}
+  .dsc{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+  .dsc span{font-size:12px;font-weight:600;margin-left:1px}
+  .dmeta{grid-column:1/4;font-size:12px;color:var(--ink-soft);line-height:1.6;font-variant-numeric:tabular-nums;margin-top:2px}
+  .dmeta .uvchip{margin-left:2px}
+  @media (max-width:520px){ .day{grid-template-columns:58px 1fr auto;gap:10px} .dsc{font-size:23px} .dmeta{font-size:11.5px} }
+
+  .gauge{position:relative;margin:4px auto 2px;max-width:280px}
+  .gcenter{position:absolute;left:50%;top:57%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:62%}
+  .gcenter .pct{font-size:54px;line-height:1;letter-spacing:-.05em}
+  .gcenter .pct span{font-size:22px;vertical-align:super;margin-left:0}
+  .gcenter .headline{font-size:15.5px;margin-top:5px;line-height:1.25}
+  #discFill,#discRing{transition:fill .45s linear,stroke .45s linear}
+  #forWhat{text-align:center;font-size:12.5px}
+  .whyline{text-align:center;margin-top:10px}
+  .segwrap{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px;
+           padding-top:16px;border-top:1px solid var(--line)}
+  .seglabel{font-size:12.5px;color:var(--ink-soft);font-weight:600}
+  .segwrap .chip{padding:8px 14px;font-size:13px}
+  @media (max-width:520px){
+    .gcenter .pct{font-size:48px}
+    .gcenter .headline{font-size:15px}
+  }
+
+  .flabel{display:flex;align-items:center;gap:7px}
+  .ficon{display:inline-flex;flex:0 0 17px}
+  .ficon svg{width:17px;height:17px}
+  .factor.worst{background:#FBF6E9;border-radius:16px;padding:14px;margin:4px -14px;box-shadow:inset 3px 0 0 #D79A00}
+  .factor.worst + .factor{border-top:0}
+  .wbadge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;
+          background:#F2E4C2;color:#8A6400;border-radius:999px;padding:2px 8px;margin-left:4px;white-space:nowrap}
+  .wic{display:flex;justify-content:center;color:var(--ink-soft);margin:3px 0 1px}
+  .wic svg{width:15px;height:15px}
+  .dic{margin:0}
+  .day{grid-template-columns:20px 60px 1fr auto}
+  .dmeta{grid-column:1/5}
+  .spark{background:linear-gradient(to top,transparent 0,transparent 59%,var(--line) 59%,var(--line) 60.5%,transparent 60.5%)}
+  @media (max-width:520px){ .day{grid-template-columns:18px 52px 1fr auto} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="sub">Spilbarhed for discgolf</div>
+      <h1>Kaster du i dag?</h1>
+    </div>
+    <div style="text-align:right">
+      <div class="sub" id="placeLabel">Finder position…</div>
+      <div class="mono" id="coordLabel" style="font-size:12px;color:var(--ink-soft)"></div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="loc">
+      <button class="primary" id="btnGeo">Brug min position</button>
+      <input type="text" id="searchInput" placeholder="…eller søg by, fx Hjørring" aria-label="Søg by">
+      <button id="btnSearch">Søg</button>
+    </div>
+    <div id="searchResults" class="loc"></div>
+    <div class="status" id="status" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card hidden" id="mainCard">
+    <div class="gauge">
+      <svg viewBox="0 0 224 196" role="img" aria-labelledby="gaugeDesc">
+        <title id="gaugeDesc">Ringmåler der viser spilbarhed i procent</title>
+        <defs>
+          <linearGradient id="trailGrad" gradientUnits="userSpaceOnUse" x1="34" y1="180" x2="192" y2="28">
+            <stop id="gs1" offset="0" stop-color="#D79A00" stop-opacity=".40"/>
+            <stop id="gs2" offset="1" stop-color="#D79A00" stop-opacity="1"/>
+          </linearGradient>
+          <radialGradient id="innerFade" cx="50%" cy="38%" r="66%">
+            <stop offset="0" stop-color="#FFFFFF" stop-opacity=".92"/>
+            <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow id="glowShadow" dx="0" dy="3" stdDeviation="5" flood-color="#D79A00" flood-opacity=".32"/>
+          </filter>
+        </defs>
+        <circle id="discFill" cx="112" cy="112" r="73" fill="#D79A00" fill-opacity=".08"/>
+        <circle cx="112" cy="112" r="73" fill="url(#innerFade)"/>
+        <circle id="discRing" cx="112" cy="112" r="73" fill="none" stroke="#D79A00" stroke-opacity=".18" stroke-width="1"/>
+        <path id="track" d="M 49.8 174.2 A 88 88 0 1 1 174.2 174.2" fill="none" stroke="#E6EAF1"
+              stroke-width="18" stroke-linecap="round" pathLength="100"/>
+        <path id="prog" class="prog" d="M 49.8 174.2 A 88 88 0 1 1 174.2 174.2" fill="none" filter="url(#glow)"
+              stroke="url(#trailGrad)" stroke-width="18" stroke-linecap="round"
+              pathLength="100" stroke-dasharray="0 100"/>
+      </svg>
+      <div class="gcenter">
+        <div class="pct" id="pct">—<span>%</span></div>
+        <div class="headline" id="headline"></div>
+      </div>
+    </div>
+    <div id="forWhat"></div>
+    <div class="whyline" id="whyline"></div>
+    <div class="segwrap">
+      <span class="seglabel">Banetype</span>
+      <div class="chips" id="terrainChips">
+        <button class="chip" data-terrain="skov" aria-pressed="false">Skovbane</button>
+        <button class="chip" data-terrain="blandet" aria-pressed="true">Blandet</button>
+        <button class="chip" data-terrain="aaben" aria-pressed="false">Åben bane</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="factorCard">
+    <h2>Lige nu</h2>
+    <div id="factors"></div>
+  </div>
+
+  <div class="card hidden" id="hourCard">
+    <div class="cardhead">
+      <h2 id="stripTitle" style="margin-bottom:0">De næste 12 timer</h2>
+      <button id="btnNow" class="hidden">Tilbage til nu</button>
+    </div>
+    <div class="strip" id="strip"></div>
+    <div class="muted" style="margin-top:10px" id="bestWindow"></div>
+  </div>
+
+  <div class="card hidden" id="weekCard">
+    <h2>De næste 7 dage</h2>
+    <div id="week"></div>
+    <div class="muted" style="margin-top:12px">Den vandrette streg i søjlerne markerer 60 %, grænsen for en god runde. Tryk på en dag for at se den time for time. Underlaget fremskrives med forventet nedbør og fordampning.</div>
+  </div>
+
+  <div class="card hidden" id="bagCard">
+    <h2>Sådan pakker du tasken</h2>
+    <ul class="tips" id="tips"></ul>
+  </div>
+
+  <div class="card hidden" id="methodCard">
+    <details>
+      <summary>Sådan regner modellen</summary>
+      <p>Hver af de fem faktorer får sin egen procent, hvor 100 % betyder, at faktoren ikke koster noget. Totalscoren er de fem procenter ganget med hinanden, ikke lagt sammen. Derfor kan to middelgode faktorer godt give en spilbar dag, mens én rigtig dårlig faktor trækker hele scoren med sig. Ingen enkelt faktor kan komme under 8 %, så scoren kun rammer bunden, når flere ting fejler samtidig. Tallene er skøn, ikke fysik:</p>
+      <ul>
+        <li><strong>Regn</strong>: nedbørssandsynlighed gange intensitet. Vådt greb koster mere end vådt tøj.</li>
+        <li><strong>Vind</strong>: effektiv vind = 0,55 × middelvind + 0,45 × vindstød, fordi det er stødene, der ødelægger et kast. Under 2 m/s koster ingenting, 8 m/s giver 65 %, og 12 m/s giver 27 %. Skovbane vægter vind × 0,55, åben bane × 1,15.</li>
+        <li><strong>Underlag</strong>: mudderindeks bygget på vægtet nedbør de sidste 7 døgn minus fordampning (ET0), justeret for årstid og blandet med jordfugtighed, hvor modellen leverer den. Maksimalt fradrag er 32 point, fordi mudder gør en runde træls, ikke umulig.</li>
+        <li><strong>Temperatur</strong>: under 10 °C stiger fradraget tiltagende stejlt og giver 40 % ved frysepunktet. Derunder falder det 2,2 point per grad. Over 26 °C koster 2,5 point per grad. Bemærk at vindafkøling allerede ligger i føles-som-tallet, mens vinden desuden trækker ned som selvstændig faktor.</li>
+        <li><strong>UV</strong>: påvirker ikke spillet, kun huden. Derfor kun et lille fradrag efter WHO-skalaen.</li></ul><p>Tre forhold er vetogrænser, som låser scoren på højst 8 % uanset resten: effektiv vind fra 14 m/s, nedbør fra 6 mm i timen og føles-som fra &minus;12 °C og derunder. Det er dem, der udløser "Bliv hjemme".</p><ul>
+      </ul>
+      <p>Uden for dagslys (fra 20 min efter solopgang til 15 min før solnedgang) låses scoren på maks. 8.</p>
+      <p>Data: Open-Meteo (vejr, jordfugtighed, ET0). Banetypen vælger du selv, fordi den ændrer vægtningen af vind og mudder.</p>
+    </details>
+  </div>
+
+  <footer>
+    Vejrdata fra Open-Meteo<br>
+    Modellen er et beslutningsstøtteværktøj, ikke en facitliste. Kig ud ad vinduet.
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+const S = {
+  lat:null, lon:null, label:"Din position",
+  wx:null, soil:null, mud:null, viewDay:null,
+  terrain:"blandet"
+};
+
+const el = id => document.getElementById(id);
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt = (v,d=0)=> (v==null||isNaN(v)) ? "–" : Number(v).toFixed(d).replace(".",",");
+
+/* ---------- score model ---------- */
+const TERRAIN = {
+  skov:    {wind:0.55, mud:1.20, name:"skovbane"},
+  blandet: {wind:1.00, mud:1.00, name:"blandet bane"},
+  aaben:   {wind:1.15, mud:0.85, name:"åben bane"}
+};
+
+function windEff(sp,gu){ return 0.55*(sp||0) + 0.45*(gu||sp||0); }
+function impWind(eff,mul){ const e=Math.max(0,eff-2); return Math.min(100, Math.pow(e,1.45)*2.6*mul); }
+function impRain(prob,mm){ const p=clamp((prob||0)/100,0,1); return Math.min(100, p*(12+Math.min(mm||0,8)*13)); }
+function impTemp(f){
+  if(f==null||isNaN(f)) return 0;
+  if(f>=10 && f<=26) return 0;
+  if(f>26) return Math.min(100,(f-26)*2.5);
+  if(f>=0) return 60*Math.pow((10-f)/10, 1.6);  /* 10 til 0 grader: 0 til 60, tiltagende stejl */
+  return Math.min(100, 60 + (-f)*2.2);          /* 0 til -18: 60 til 100 */
+}
+function impUv(uv){ if(uv==null) return 0; if(uv<6) return 0; if(uv<8) return 3; if(uv<11) return 6; return 10; }
+function impMud(idx,mul){ return Math.min(32, (idx||0)*0.30*mul); }
+
+function band(score){
+  if(score>=85) return {c:"#12996B", t:"Perfekte forhold",
+    a:"Tag afsted. Der er ikke noget, du behøver tage særlige hensyn til."};
+  if(score>=70) return {c:"#4FA83C", t:"God runde",
+    a:"Fine forhold. Tænk kort over tøjlag og discvalg, så er resten din egen skyld."};
+  if(score>=50) return {c:"#D79A00", t:"Spilbart med tilpasning",
+    a:"Det bliver en god runde, hvis du tilpasser dig: tøj efter vejret, en grad mere overstabilt i tasken og lavere linjer."};
+  if(score>=30) return {c:"#E07A28", t:"Krævende runde",
+    a:"Det kan sagtens lade sig gøre, men det bliver arbejde. Overvej en kortere runde og skru forventningerne til scoren ned."};
+  if(score>=15) return {c:"#E05545", t:"Overvej om du gider",
+    a:"Forholdene trækker hårdt. Overvej putting- eller feltræning i stedet, eller find et bedre tidsrum i ugeoversigten."};
+  return {c:"#A63E33", t:"Bliv hjemme",
+    a:"Vejret er kritisk. Det er hverken sjovt eller sikkert at være på banen nu."};
+}
+function critReason(h,i,eff){
+  if(eff>=14) return "vindstød og middelvind på tilsammen "+fmt(eff,1)+" m/s effektiv vind";
+  if((h.precipitation[i]||0)>=6) return "kraftig nedbør på "+fmt(h.precipitation[i],1)+" mm i timen";
+  if((h.apparent_temperature[i]||0)<=-12) return "streng frost, føles som "+fmt(h.apparent_temperature[i],1)+" °C";
+  return "kritisk vejr";
+}
+function uvColor(uv){
+  if(uv==null) return "#DDD";
+  if(uv<3) return "#289500"; if(uv<6) return "#F7E400";
+  if(uv<8) return "#F85900"; if(uv<11) return "#D8001D"; return "#6B49C8";
+}
+const NAMES={regn:"Regn", vind:"Vind", underlag:"Underlag", temperatur:"Temperatur", uv:"UV"};
+const DIRS=["N","NØ","Ø","SØ","S","SV","V","NV"];
+function dirName(deg){ return DIRS[Math.round(((deg||0)%360)/45)%8]; }
+
+
+/* ---------- ikoner, farveuafhaengigt signal ---------- */
+const SVG=(d,extra)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" '
+  +'stroke-linecap="round" stroke-linejoin="round"'+(extra||"")+'>'+d+'</svg>';
+const FICON={
+  vind:SVG('<path d="M3 8h9a3 3 0 1 0-3-3"/><path d="M3 12h13a3 3 0 1 1-3 3"/><path d="M3 16h7"/>'),
+  regn:SVG('<path d="M7 14.5a4 4 0 0 1 .6-7.9 5.5 5.5 0 0 1 10.3 1.6A3.4 3.4 0 0 1 17.4 15H7z"/><path d="M8.5 18.5 8 20.5M12.5 18.5 12 20.5M16.5 18.5 16 20.5"/>'),
+  underlag:SVG('<path d="M3 16c3-2 5 1 8-1s6 1 10-1"/><path d="M3 20c3-2 5 1 8-1s6 1 10-1"/><path d="M6 10l2-4 2 4M15 11V5"/>'),
+  temperatur:SVG('<path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/>'),
+  uv:SVG('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>')
+};
+const WICON={
+  sol:SVG('<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>'),
+  delvis:SVG('<circle cx="9" cy="8.5" r="3.2"/><path d="M9 1.8v1.6M2.3 8.5h1.6M4.4 3.9l1.1 1.1M13.6 3.9l-1.1 1.1"/><path d="M8 19.5a3.6 3.6 0 0 1 .6-7.1 4.9 4.9 0 0 1 9.2 1.4 3 3 0 0 1-.4 5.7H8z"/>'),
+  sky:SVG('<path d="M7 18.5a4 4 0 0 1 .6-7.9 5.5 5.5 0 0 1 10.3 1.6A3.4 3.4 0 0 1 17.4 19H7z"/>'),
+  regn:SVG('<path d="M7 14.5a4 4 0 0 1 .6-7.9 5.5 5.5 0 0 1 10.3 1.6A3.4 3.4 0 0 1 17.4 15H7z"/><path d="M8.5 18.5 8 20.5M12.5 18.5 12 20.5M16.5 18.5 16 20.5"/>'),
+  blaest:SVG('<path d="M3 8h9a3 3 0 1 0-3-3"/><path d="M3 12h13a3 3 0 1 1-3 3"/><path d="M3 16h7"/>')
+};
+function wxIcon(prob,mm,cloud,eff){
+  if((mm||0)>0.2 || (prob||0)>=50) return WICON.regn;
+  if(eff>9) return WICON.blaest;
+  if((cloud||0)>70) return WICON.sky;
+  if((cloud||0)>30) return WICON.delvis;
+  return WICON.sol;
+}
+
+/* ---------- data ---------- */
+async function getWeather(lat,lon){
+  const u = "https://api.open-meteo.com/v1/forecast?latitude="+lat.toFixed(4)+"&longitude="+lon.toFixed(4)
+    + "&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,cloud_cover"
+    + "&daily=cloud_cover_mean,sunrise,sunset,precipitation_sum,precipitation_probability_max,et0_fao_evapotranspiration,temperature_2m_min,temperature_2m_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max"
+    + "&past_days=7&forecast_days=8&timezone=auto&wind_speed_unit=ms";
+  const r = await fetch(u);
+  if(!r.ok) throw new Error("Vejrdata kunne ikke hentes ("+r.status+")");
+  return r.json();
+}
+async function getSoil(lat,lon){
+  try{
+    const u="https://api.open-meteo.com/v1/forecast?latitude="+lat.toFixed(4)+"&longitude="+lon.toFixed(4)
+      +"&hourly=soil_moisture_3_to_9cm&forecast_days=1&timezone=auto";
+    const r=await fetch(u); if(!r.ok) return null;
+    const j=await r.json();
+    const arr=(j.hourly&&j.hourly.soil_moisture_3_to_9cm||[]).filter(v=>typeof v==="number");
+    if(!arr.length) return null;
+    return arr.reduce((a,b)=>a+b,0)/arr.length;
+  }catch(e){ return null; }
+}
+
+/* ---------- mud index ---------- */
+function todayIdxOf(wx){ return wx.daily.time.indexOf(localNow(wx).toISOString().slice(0,10)); }
+
+function mudForDay(wx, soil, di){
+  const d=wx.daily;
+  if(di<0||di>=d.time.length) return {idx:30, frozen:false};
+  const P = k => (d.precipitation_sum[di-k]!=null? d.precipitation_sum[di-k]:0);
+  const E = k => (d.et0_fao_evapotranspiration[di-k]!=null? d.et0_fao_evapotranspiration[di-k]:1.5);
+  const ti = todayIdxOf(wx);
+  const ahead = di - ti;
+  const frac = ahead===0 ? clamp(localNow(wx).getUTCHours()/24,0.1,1) : 0.5;
+  const W = P(0)*frac + P(1)*0.80 + P(2)*0.50 + P(3)*0.30 + (P(4)+P(5)+P(6)+P(7))*0.10;
+  const D = (E(0)*frac + E(1)*0.80 + E(2)*0.50 + E(3)*0.30 + (E(4)+E(5)+E(6)+E(7))*0.10)*0.9;
+  const m = +d.time[di].slice(5,7);
+  const season = (m>=11||m<=2)?1.35 : (m===3||m===10)?1.15 : (m>=5&&m<=8)?0.85 : 1.0;
+  let idx = clamp((W-D)*10*season, 0, 100);
+  if(soil!=null && ahead>=0 && ahead<=1){
+    const sIdx = clamp((soil-0.15)/(0.45-0.15)*100,0,100);
+    const w = ahead===0? 0.45 : 0.20;
+    idx = (1-w)*idx + w*sIdx;
+  }
+  const frozen = (d.temperature_2m_min[di]!=null && d.temperature_2m_min[di]<=-3);
+  return {idx:Math.round(idx), frozen};
+}
+function mudLabel(m){
+  if(m.frozen) return "Frossen og hård";
+  const i=m.idx;
+  if(i<15) return "Tørt og fast";
+  if(i<35) return "Let fugtigt";
+  if(i<60) return "Blødt";
+  if(i<80) return "Mudret";
+  return "Meget mudret";
+}
+
+/* ---------- time helpers ---------- */
+function localNow(wx){ return new Date(Date.now() + (wx.utc_offset_seconds||0)*1000); }
+function hourIndex(wx){
+  const key = localNow(wx).toISOString().slice(0,13);
+  const i = wx.hourly.time.findIndex(t=>t.slice(0,13)===key);
+  return i<0?0:i;
+}
+function isDaylight(wx,timeStr){
+  const day=timeStr.slice(0,10);
+  const di=wx.daily.time.indexOf(day);
+  if(di<0) return true;
+  const t=timeStr.slice(11,16);
+  const sr=wx.daily.sunrise[di].slice(11,16), ss=wx.daily.sunset[di].slice(11,16);
+  const toMin=s=>+s.slice(0,2)*60 + +s.slice(3,5);
+  const now=toMin(t);
+  return now>=toMin(sr)+20 && now<=toMin(ss)-15;
+}
+function dayHours(wx,day){
+  const t=wx.hourly.time, out=[];
+  for(let j=0;j<t.length;j++) if(t[j].slice(0,10)===day) out.push(j);
+  return out;
+}
+const WD=["søndag","mandag","tirsdag","onsdag","torsdag","fredag","lørdag"];
+function dayName(day,ahead){
+  if(ahead===0) return "I dag";
+  if(ahead===1) return "I morgen";
+  const n=WD[new Date(day+"T12:00:00").getDay()];
+  return n.charAt(0).toUpperCase()+n.slice(1);
+}
+function dayShort(day){ return (+day.slice(8,10))+"/"+(+day.slice(5,7)); }
+
+/* ---------- per-hour score ---------- */
+function scoreAt(wx,i,mud){
+  const h=wx.hourly, T=TERRAIN[S.terrain];
+  const eff=windEff(h.wind_speed_10m[i], h.wind_gusts_10m[i]);
+  const parts={
+    regn: impRain(h.precipitation_probability[i], h.precipitation[i]),
+    vind: impWind(eff, T.wind),
+    underlag: mud.frozen? 6 : impMud(mud.idx, T.mud),
+    temperatur: impTemp(h.apparent_temperature[i]),
+    uv: impUv(h.uv_index[i])
+  };
+  /* ingen enkelt faktor må alene nulstille scoren; det er vetoet nedenfor forbeholdt */
+  Object.keys(parts).forEach(k=>{ parts[k]=clamp(parts[k],0,92); });
+  let f=1; Object.values(parts).forEach(v=>{ f*= (1-v/100); });
+  let score=clamp(Math.round(f*100),0,100);
+  const critical = eff>=14 || (h.precipitation[i]||0)>=6 || (h.apparent_temperature[i]||0)<=-12;
+  if(critical) score=Math.min(score,8);
+  const dark=!isDaylight(wx,h.time[i]);
+  if(dark) score=Math.min(score,8);
+  return {score,parts,eff,dark,critical};
+}
+
+/* ---------- rendering ---------- */
+function render(){
+  const wx=S.wx, mud=S.mud, i=hourIndex(wx), h=wx.hourly;
+  const cur=scoreAt(wx,i,mud);
+  const b=cur.dark? {c:"#A63E33",t:"Mørkt",a:""} : band(cur.score);
+
+  el("pct").innerHTML = cur.score+'<span>%</span>';
+  el("pct").style.color=b.c;
+  el("headline").textContent=b.t;
+  el("headline").style.color=b.c;
+  el("forWhat").textContent = S.label+" · "+h.time[i].slice(11,16)+" · "+TERRAIN[S.terrain].name;
+
+  const worst=Object.entries(cur.parts).sort((a,b2)=>b2[1]-a[1])[0];
+  el("whyline").textContent = cur.dark
+    ? "Solen er nede. Scoren er låst, indtil det bliver lyst igen."
+    : cur.critical
+      ? b.a+" Udslagsgivende er "+critReason(h,i,cur.eff)+"."
+      : (worst[1]<4 ? b.a
+         : b.a+" Største begrænsning er "+(NAMES[worst[0]]||worst[0]).toLowerCase()+" med "+Math.round(100-worst[1])+" %.");
+
+  el("prog").setAttribute("stroke-dasharray",cur.score+" 100");
+  el("gs1").setAttribute("stop-color",b.c);
+  el("gs2").setAttribute("stop-color",b.c);
+  el("glowShadow").setAttribute("flood-color",b.c);
+  el("discFill").setAttribute("fill",b.c);
+  el("discRing").setAttribute("stroke",b.c);
+
+  /* factors */
+  const F=[
+    ["Vind","vind", cur.parts.vind, fmt(h.wind_speed_10m[i],1)+" m/s "+dirName(h.wind_direction_10m[i])+", stød "+fmt(h.wind_gusts_10m[i],1),
+      "Effektiv vind "+fmt(cur.eff,1)+" m/s på "+TERRAIN[S.terrain].name+"."],
+    ["Regn","regn", cur.parts.regn, fmt(h.precipitation_probability[i])+" % / "+fmt(h.precipitation[i],1)+" mm",
+      h.precipitation[i]>0.3? "Vådt greb koster mere præcision end vådt tøj." : "Tørt greb lige nu."],
+    ["Underlag","underlag", cur.parts.underlag, mudLabel(mud)+" ("+mud.idx+")",
+      "Baseret på nedbør og fordampning de seneste 7 døgn"+(S.soil!=null?" plus målt jordfugtighed":"")+"."],
+    ["Temperatur","temperatur", cur.parts.temperatur, fmt(h.temperature_2m[i],1)+" °C, føles "+fmt(h.apparent_temperature[i],1)+" °C",
+      h.apparent_temperature[i]<5? "Under 5 °C stivner base-plast og grebet ryger." : "Behagelig kastetemperatur."],
+    ["UV","uv", cur.parts.uv, "Indeks "+fmt(h.uv_index[i],1),
+      h.uv_index[i]>=6? "Beskyttelse anbefales på en 2-timers runde." : "Ingen særlig risiko."]
+  ];
+  const worstKey = worst[1]>=4? worst[0] : null;
+  el("factors").innerHTML = F.map(f=>{
+    const pct=clamp(Math.round(100-f[2]),0,100);
+    const col = pct>=90?"#12996B": pct>=70?"#D79A00":"#E05545";
+    const isW = f[1]===worstKey;
+    return '<div class="factor'+(isW?" worst":"")+'">'
+      + '<div class="flabel"><span class="ficon" style="color:'+(isW?col:"var(--ink-soft)")+'">'+FICON[f[1]]+'</span>'+f[0]+'</div>'
+      + '<div class="bar"><i style="width:'+pct+'%;background:'+col+'"></i></div>'
+      + '<div class="fval" style="color:'+col+'">'+pct+' %</div>'
+      + '<div class="fnote">'+f[3]+' · '+f[4]+(isW?' <span class="wbadge">største begrænsning</span>':'')+'</div></div>';
+  }).join("");
+
+  /* hourly strip, enten de kommende 12 timer eller en valgt dag */
+  const ti=todayIdxOf(wx);
+  let idxList=[], mudUse=mud;
+  if(S.viewDay==null || S.viewDay===ti){
+    S.viewDay=null;
+    for(let k=0;k<12 && i+k<h.time.length;k++) idxList.push(i+k);
+    el("stripTitle").textContent="De næste 12 timer";
+    el("btnNow").classList.add("hidden");
+  }else{
+    const day=wx.daily.time[S.viewDay];
+    mudUse=mudForDay(wx,S.soil,S.viewDay);
+    idxList=dayHours(wx,day).filter(j=>isDaylight(wx,h.time[j]));
+    el("stripTitle").textContent=dayName(day,S.viewDay-ti)+" i dagslys";
+    el("btnNow").classList.remove("hidden");
+  }
+  let rows="";
+  idxList.forEach((j,k)=>{
+    const s=scoreAt(wx,j,mudUse), sb=s.dark?{c:"#A63E33"}:band(s.score);
+    const uv=h.uv_index[j];
+    rows += '<div class="hr'+((S.viewDay==null&&k===0)?" now":"")+'">'
+      + '<div class="t">'+h.time[j].slice(11,16)+'</div>'
+      + '<div class="wic">'+wxIcon(h.precipitation_probability[j],h.precipitation[j],h.cloud_cover[j],windEff(h.wind_speed_10m[j],h.wind_gusts_10m[j]))+'</div>'
+      + '<div class="sc" style="color:'+sb.c+'">'+s.score+'</div>'
+      + '<div class="sb" style="background:'+sb.c+';opacity:.9"></div>'
+      + '<div class="temp">'+fmt(h.temperature_2m[j])+'°</div>'
+      + '<div class="row">føles '+fmt(h.apparent_temperature[j])+'°</div>'
+      + '<div class="row">'+fmt(h.precipitation_probability[j])+' %</div>'
+      + '<div class="row"><span class="arrow" style="transform:rotate('+((h.wind_direction_10m[j]||0)+180)+'deg)">↑</span> '
+        + dirName(h.wind_direction_10m[j])+'</div>'
+      + '<div class="row">'+fmt(h.wind_speed_10m[j],1)+'/'+fmt(h.wind_gusts_10m[j],0)+'</div>'
+      + '<div class="row" style="margin-top:4px"><span class="uvchip" style="background:'+uvColor(uv)+';color:'+((uv!=null&&uv>=6)?"#fff":"#111")+'">'+fmt(uv,1)+'</span></div>'
+      + '</div>';
+  });
+  el("strip").innerHTML=rows;
+
+  /* bedste 2-timers vindue */
+  let best=null;
+  if(S.viewDay==null){
+    for(let j=i;j<Math.min(i+24,h.time.length-1);j++){
+      const a=scoreAt(wx,j,mud), c=scoreAt(wx,j+1,mud);
+      if(a.dark||c.dark) continue;
+      const avg=(a.score+c.score)/2;
+      if(!best||avg>best.avg) best={avg,from:h.time[j],to:h.time[j+1]};
+    }
+  }else{
+    for(let k=0;k<idxList.length-1;k++){
+      const j=idxList[k]; if(idxList[k+1]!==j+1) continue;
+      const avg=(scoreAt(wx,j,mudUse).score+scoreAt(wx,j+1,mudUse).score)/2;
+      if(!best||avg>best.avg) best={avg,from:h.time[j],to:h.time[j+1]};
+    }
+  }
+  el("bestWindow").innerHTML = best
+    ? "<strong>Bedste 2-timers vindue:</strong> "+best.from.slice(11,16)+"–"+
+      (String((+best.to.slice(11,13)+1)%24).padStart(2,"0"))+":00 med gennemsnit "+Math.round(best.avg)+" %."
+      + (S.viewDay==null && best.from.slice(0,10)!==h.time[i].slice(0,10)? " (i morgen)":"")
+    : "Intet dagslysvindue i den valgte periode.";
+
+  renderWeek();
+
+  /* bag tips */
+  const tips=[];
+  if(cur.eff>7) tips.push("<strong>Overstabilt først.</strong> Effektiv vind på "+fmt(cur.eff,1)+" m/s vender understabile linjer. Spil hyzer med Teebird/FD3-typen og hold discen lav.");
+  else if(cur.eff>4) tips.push("<strong>Hold højden nede.</strong> "+fmt(cur.eff,1)+" m/s effektiv vind straffer høje anhyzer-linjer. Vælg en grad mere overstabilt end normalt.");
+  if(h.precipitation[i]>0.2 || h.precipitation_probability[i]>60) tips.push("<strong>To håndklæder.</strong> Ét til discen, ét der bliver tørt i tasken. Base-plast griber bedre end blank premium i vådt vejr.");
+  if(h.apparent_temperature[i]<=-10) tips.push("<strong>Frostrisiko.</strong> Føles som "+fmt(h.apparent_temperature[i],1)+" °C. Bar hud tager skade på minutter, plastikken bliver skør og kan revne ved anslag. Det her er ikke et spørgsmål om at være sej.");
+  else if(h.apparent_temperature[i]<5) tips.push("<strong>Kuldeplast.</strong> Under 5 °C bliver DX og D-line stive. GStar og gummiagtige putterplast holder grebet. Varm skulderen ordentligt op inden fuld kraft.");
+  if(mud.frozen) tips.push("<strong>Frossen bund.</strong> Hårdt underlag giver lange skid, men også glatte nedslagsfødder. Kort x-step, ingen fuld udskridning.");
+  else if(mud.idx>=60) tips.push("<strong>Fodfæstet er dagens risiko.</strong> "+mudLabel(mud)+" bund. Kort x-step eller stående kast, sko med greb. Nedslagsfoden er der, skader sker.");
+  else if(mud.idx>=35) tips.push("<strong>Blød bund.</strong> Regn med lidt kortere kast, discen ruller ikke ud. Sigt efter at lande på fairway frem for at plukke afstand.");
+  if(h.uv_index[i]>=6) tips.push("<strong>UV "+fmt(h.uv_index[i],1)+" (WHO: høj).</strong> En runde er to timer i solen. Solcreme, kasket og vand.");
+  if(!tips.length) tips.push("<strong>Ingen særlige forholdsregler.</strong> Standardtaske og en flaske vand. Brug den slags dag til at arbejde med linjer frem for afstand.");
+  el("tips").innerHTML=tips.map(t=>"<li>"+t+"</li>").join("");
+
+  ["mainCard","factorCard","hourCard","weekCard","bagCard","methodCard"].forEach(id=>el(id).classList.remove("hidden"));
+}
+
+function renderWeek(){
+  const wx=S.wx, h=wx.hourly, d=wx.daily, ti=todayIdxOf(wx);
+  let out="";
+  for(let k=0;k<7;k++){
+    const di=ti+k; if(di>=d.time.length) break;
+    const day=d.time[di], mud=mudForDay(wx,S.soil,di);
+    const hrs=dayHours(wx,day).filter(j=>isDaylight(wx,h.time[j]));
+    if(!hrs.length) continue;
+    const sc=hrs.map(j=>scoreAt(wx,j,mud).score);
+    let best=null;
+    for(let x=0;x<hrs.length-1;x++){
+      if(hrs[x+1]!==hrs[x]+1) continue;
+      const avg=(sc[x]+sc[x+1])/2;
+      if(!best||avg>best.avg) best={avg, from:+h.time[hrs[x]].slice(11,13)};
+    }
+    const val = best? Math.round(best.avg) : Math.round(sc.reduce((a,b)=>a+b,0)/sc.length);
+    const b=band(val), uv=d.uv_index_max[di];
+    const spark=sc.map(v=>'<i style="height:'+Math.max(7,v)+'%;background:'+band(v).c+'"></i>').join("");
+    const win = best? String(best.from).padStart(2,"0")+"–"+String((best.from+2)%24).padStart(2,"0") : "–";
+    const meta = "Bedste "+win+" &middot; "+fmt(d.temperature_2m_max[di])+"°/"+fmt(d.temperature_2m_min[di])+"°"
+      + " &middot; "+fmt(d.precipitation_sum[di],1)+" mm ("+fmt(d.precipitation_probability_max[di])+" %)"
+      + " &middot; "+fmt(d.wind_speed_10m_max[di],1)+"/"+fmt(d.wind_gusts_10m_max[di],0)+" m/s "+dirName(d.wind_direction_10m_dominant[di])
+      + " &middot; "+mudLabel(mud);
+    const ic=wxIcon(d.precipitation_probability_max[di], (d.precipitation_sum[di]||0)/6, d.cloud_cover_mean[di],
+                    windEff(d.wind_speed_10m_max[di], d.wind_gusts_10m_max[di]));
+    out += '<button class="day'+((S.viewDay===di)?" sel":"")+'" data-di="'+di+'">'
+      + '<div class="wic dic">'+ic+'</div>'
+      + '<div class="dhead"><span class="dn">'+dayName(day,k)+'</span><span class="dd">'+dayShort(day)+'</span></div>'
+      + '<div class="spark">'+spark+'</div>'
+      + '<div class="dsc" style="color:'+b.c+'">'+val+'<span>%</span></div>'
+      + '<div class="dmeta">'+meta+' <span class="uvchip" style="background:'+uvColor(uv)+';color:'+((uv!=null&&uv>=6)?"#fff":"#111")+'">UV '+fmt(uv,1)+'</span></div>'
+      + '</button>';
+  }
+  el("week").innerHTML=out;
+  el("week").querySelectorAll("button[data-di]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const di=+btn.dataset.di;
+      S.viewDay = (S.viewDay===di)? null : di;
+      render();
+      el("hourCard").scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+}
+
+/* ---------- flow ---------- */
+async function loadFor(lat,lon,label){
+  setStatus("Henter vejr og underlag…");
+  try{
+    const [wx,soil]=await Promise.all([getWeather(lat,lon), getSoil(lat,lon)]);
+    S.wx=wx; S.soil=soil; S.lat=lat; S.lon=lon; S.label=label; S.viewDay=null;
+    S.mud=mudForDay(wx,soil,todayIdxOf(wx));
+    el("placeLabel").textContent=label;
+    el("coordLabel").textContent=lat.toFixed(3)+", "+lon.toFixed(3);
+    render();
+    setStatus("");
+  }catch(e){ setStatus(e.message,true); }
+}
+function setStatus(msg,isErr){
+  const s=el("status"); s.textContent=msg||""; s.style.color=isErr?"#E05545":"var(--ink-soft)";
+}
+
+el("btnNow").addEventListener("click",()=>{ S.viewDay=null; render(); });
+el("btnGeo").addEventListener("click",useGeo);
+function useGeo(){
+  if(!navigator.geolocation){ setStatus("Browseren deler ikke placering. Søg efter en by i stedet.",true); return; }
+  setStatus("Finder din position…");
+  navigator.geolocation.getCurrentPosition(
+    p=>loadFor(p.coords.latitude,p.coords.longitude,"Din position"),
+    ()=>setStatus("Placering blev afvist. Søg efter en by i feltet ved siden af.",true),
+    {enableHighAccuracy:false, timeout:10000, maximumAge:600000}
+  );
+}
+el("btnSearch").addEventListener("click",doSearch);
+el("searchInput").addEventListener("keydown",e=>{ if(e.key==="Enter") doSearch(); });
+async function doSearch(){
+  const q=el("searchInput").value.trim();
+  if(!q) return;
+  setStatus("Søger…");
+  try{
+    const r=await fetch("https://geocoding-api.open-meteo.com/v1/search?count=5&language=da&format=json&name="+encodeURIComponent(q));
+    const j=await r.json();
+    const res=j.results||[];
+    if(!res.length){ setStatus("Ingen steder fundet. Prøv en anden stavemåde.",true); el("searchResults").innerHTML=""; return; }
+    setStatus("");
+    el("searchResults").innerHTML=res.map((x,i)=>'<button data-r="'+i+'">'+x.name+(x.admin1?", "+x.admin1:"")+"</button>").join("");
+    el("searchResults").querySelectorAll("button").forEach(btn=>btn.addEventListener("click",()=>{
+      const x=res[+btn.dataset.r];
+      el("searchResults").innerHTML="";
+      loadFor(x.latitude,x.longitude,x.name);
+    }));
+  }catch(e){ setStatus("Søgningen fejlede. Tjek din netværksforbindelse.",true); }
+}
+el("terrainChips").querySelectorAll(".chip").forEach(chip=>{
+  chip.addEventListener("click",()=>{
+    S.terrain=chip.dataset.terrain;
+    el("terrainChips").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c===chip?"true":"false"));
+    if(S.wx) render();
+  });
+});
+
+useGeo();
+</script>
+</body>
+</html>
