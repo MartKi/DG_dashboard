@@ -68,6 +68,8 @@
   .strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;scrollbar-width:none;scroll-snap-type:x proximity}
   .strip::-webkit-scrollbar{display:none}
   .hr{flex:0 0 72px;border-radius:20px;padding:11px 7px 12px;text-align:center;scroll-snap-align:start}
+  .hr.sub{flex-basis:58px;opacity:.72}
+  .hr.sub .t:before{content:"~"}
   .hr .t{font-size:12px;font-weight:600;color:var(--ink-soft);font-variant-numeric:tabular-nums}
   .hr .sc{font-size:23px;font-weight:800;line-height:1.15;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
   .hr .sb{height:4px;border-radius:999px;margin:5px 3px 8px}
@@ -309,15 +311,17 @@
   <div class="card hidden" id="methodCard">
     <details>
       <summary>Sådan regner modellen</summary>
-      <p>Hver af de fem faktorer får sin egen procent, hvor 100 % betyder, at faktoren ikke koster noget. Totalscoren er de fem procenter ganget med hinanden, ikke lagt sammen. Derfor kan to middelgode faktorer godt give en spilbar dag, mens én rigtig dårlig faktor trækker hele scoren med sig. Ingen enkelt faktor kan komme under 8 %, så scoren kun rammer bunden, når flere ting fejler samtidig. Tallene er skøn, ikke fysik:</p>
+      <p>Hver af de seks faktorer får sin egen procent, hvor 100 % betyder, at faktoren ikke koster noget. Totalscoren er de seks procenter ganget med hinanden, ikke lagt sammen. Derfor kan to middelgode faktorer godt give en spilbar dag, mens én rigtig dårlig faktor trækker hele scoren med sig. Ingen enkelt faktor kan komme under 8 %, så scoren kun rammer bunden, når flere ting fejler samtidig. Tallene er skøn, ikke fysik:</p>
       <ul>
         <li><strong>Regn</strong>: nedbørssandsynlighed gange intensitet. Vådt greb koster mere end vådt tøj.</li>
         <li><strong>Vind</strong>: effektiv vind = 0,55 × middelvind + 0,45 × vindstød, fordi det er stødene, der ødelægger et kast. Under 2 m/s koster ingenting, 8 m/s giver 65 %, og 12 m/s giver 27 %. Skovbane vægter vind × 0,55, åben bane × 1,15.</li>
         <li><strong>Underlag</strong>: mudderindeks bygget på vægtet nedbør de sidste 7 døgn minus fordampning (ET0), justeret for årstid og blandet med jordfugtighed, hvor modellen leverer den. Maksimalt fradrag er 32 point, fordi mudder gør en runde træls, ikke umulig.</li>
         <li><strong>Temperatur</strong>: under 10 °C stiger fradraget tiltagende stejlt og giver 40 % ved frysepunktet. Derunder falder det 2,2 point per grad. Over 26 °C koster 2,5 point per grad. Bemærk at vindafkøling allerede ligger i føles-som-tallet, mens vinden desuden trækker ned som selvstændig faktor.</li>
-        <li><strong>UV</strong>: påvirker ikke spillet, kun huden. Derfor kun et lille fradrag efter WHO-skalaen.</li></ul><p>Tre forhold er vetogrænser, som låser scoren på højst 8 % uanset resten: effektiv vind fra 14 m/s, nedbør fra 6 mm i timen og føles-som fra &minus;12 °C og derunder. Det er dem, der udløser "Bliv hjemme".</p><ul>
+        <li><strong>UV</strong>: påvirker ikke spillet, kun huden. Derfor kun et lille fradrag efter WHO-skalaen.</li>
+        <li><strong>Sigtbarhed</strong>: baseret på Open-Meteos sigtbarhedstal (meter). Over 8 km koster intet, under 3 km (dis/let tåge) begynder fradraget, og under 1 km (tåge) stiger det hurtigt. Det er uafhængigt af soltid, så en tåget middag straffes samme vej som en klar aften.</li>
       </ul>
-      <p>Uden for dagslys (fra 20 min efter solopgang til 15 min før solnedgang) låses scoren på maks. 8.</p>
+      <p>Fire forhold er vetogrænser, som låser scoren på højst 8 % uanset resten: effektiv vind fra 14 m/s, nedbør fra 6 mm i timen, føles-som fra &minus;12 °C og derunder, og sigt på 100 meter og derunder (tæt tåge). Det er dem, der udløser "Bliv hjemme".</p>
+      <p>Uden for dagslys (fra 20 min efter solopgang til 15 min før solnedgang) låses scoren på maks. 8. Fordi vejrdata kun findes for hele timer, men lyset skifter meget på under en time, indsætter time-for-time-oversigten ekstra punkter hvert 15. minut omkring solopgang og solnedgang. De øvrige vejrtal interpoleres lineært mellem de to nærmeste heltimer i de punkter, mens lyset regnes præcist ud fra klokkeslættet – det giver en glidende overgang i stedet for et hårdt spring mellem to timer.</p>
       <p>Data: Open-Meteo (vejr, jordfugtighed, ET0). Banetypen vælger du selv, fordi den ændrer vægtningen af vind og mudder.</p>
     </details>
   </div>
@@ -360,6 +364,14 @@ function impTemp(f){
 }
 function impUv(uv){ if(uv==null) return 0; if(uv<6) return 0; if(uv<8) return 3; if(uv<11) return 6; return 10; }
 function impMud(idx,mul){ return Math.min(32, (idx||0)*0.30*mul); }
+function impVis(vis){
+  if(vis==null) return 0;
+  if(vis>=8000) return 0;
+  if(vis>=3000) return (8000-vis)/5000*15;      /* let dis: 0 til 15 */
+  if(vis>=1000) return 15+(3000-vis)/2000*35;   /* tåge: 15 til 50 */
+  if(vis>=100)  return 50+(1000-vis)/900*38;    /* tæt tåge: 50 til 88 */
+  return 88;
+}
 
 function band(score){
   if(score>=80) return {c:"#12996B", t:"Perfekte forhold",
@@ -377,6 +389,7 @@ function critReason(h,i,eff){
   if(eff>=14) return "vindstød og middelvind på tilsammen "+fmt(eff,1)+" m/s effektiv vind";
   if((h.precipitation[i]||0)>=6) return "kraftig nedbør på "+fmt(h.precipitation[i],1)+" mm i timen";
   if((h.apparent_temperature[i]||0)<=-12) return "streng frost, føles som "+fmt(h.apparent_temperature[i],1)+" °C";
+  if(h.visibility[i]!=null && h.visibility[i]<=100) return "tæt tåge med "+fmt(h.visibility[i])+" meters sigt";
   return "kritisk vejr";
 }
 function uvColor(uv){
@@ -384,7 +397,7 @@ function uvColor(uv){
   if(uv<3) return "#289500"; if(uv<6) return "#F7E400";
   if(uv<8) return "#F85900"; if(uv<11) return "#D8001D"; return "#6B49C8";
 }
-const NAMES={regn:"Regn", vind:"Vind", underlag:"Underlag", temperatur:"Temperatur", uv:"UV", lys:"Lys"};
+const NAMES={regn:"Regn", vind:"Vind", underlag:"Underlag", temperatur:"Temperatur", uv:"UV", sigt:"Sigtbarhed", lys:"Lys"};
 const DIRS=["N","NØ","Ø","SØ","S","SV","V","NV"];
 function dirName(deg){ return DIRS[Math.round(((deg||0)%360)/45)%8]; }
 
@@ -398,6 +411,7 @@ const FICON={
   underlag:SVG('<path d="M3 16c3-2 5 1 8-1s6 1 10-1"/><path d="M3 20c3-2 5 1 8-1s6 1 10-1"/><path d="M6 10l2-4 2 4M15 11V5"/>'),
   temperatur:SVG('<path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/>'),
   uv:SVG('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>'),
+  sigt:SVG('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>'),
   lys:SVG('<path d="M3 17h18"/><path d="M6.5 17a5.5 5.5 0 0 1 11 0"/><path d="M12 5.5v2M4.4 9.4l1.5 1.5M19.6 9.4l-1.5 1.5"/><path d="M3 20.5h18"/>')
 };
 const WICON={
@@ -405,10 +419,12 @@ const WICON={
   delvis:SVG('<circle cx="9" cy="8.5" r="3.2"/><path d="M9 1.8v1.6M2.3 8.5h1.6M4.4 3.9l1.1 1.1M13.6 3.9l-1.1 1.1"/><path d="M8 19.5a3.6 3.6 0 0 1 .6-7.1 4.9 4.9 0 0 1 9.2 1.4 3 3 0 0 1-.4 5.7H8z"/>'),
   sky:SVG('<path d="M7 18.5a4 4 0 0 1 .6-7.9 5.5 5.5 0 0 1 10.3 1.6A3.4 3.4 0 0 1 17.4 19H7z"/>'),
   regn:SVG('<path d="M7 14.5a4 4 0 0 1 .6-7.9 5.5 5.5 0 0 1 10.3 1.6A3.4 3.4 0 0 1 17.4 15H7z"/><path d="M8.5 18.5 8 20.5M12.5 18.5 12 20.5M16.5 18.5 16 20.5"/>'),
-  blaest:SVG('<path d="M3 8h9a3 3 0 1 0-3-3"/><path d="M3 12h13a3 3 0 1 1-3 3"/><path d="M3 16h7"/>')
+  blaest:SVG('<path d="M3 8h9a3 3 0 1 0-3-3"/><path d="M3 12h13a3 3 0 1 1-3 3"/><path d="M3 16h7"/>'),
+  taage:SVG('<path d="M3 8h18M3 12h18M3 16h13"/>')
 };
-function wxIcon(prob,mm,cloud,eff){
+function wxIcon(prob,mm,cloud,eff,vis){
   if((mm||0)>0.2 || (prob||0)>=50) return WICON.regn;
+  if(vis!=null && vis<2000) return WICON.taage;
   if(eff>9) return WICON.blaest;
   if((cloud||0)>70) return WICON.sky;
   if((cloud||0)>30) return WICON.delvis;
@@ -418,7 +434,7 @@ function wxIcon(prob,mm,cloud,eff){
 /* ---------- data ---------- */
 async function getWeather(lat,lon){
   const u = "https://api.open-meteo.com/v1/forecast?latitude="+lat.toFixed(4)+"&longitude="+lon.toFixed(4)
-    + "&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,cloud_cover"
+    + "&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,cloud_cover,visibility"
     + "&daily=cloud_cover_mean,sunrise,sunset,precipitation_sum,precipitation_probability_max,et0_fao_evapotranspiration,temperature_2m_min,temperature_2m_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max"
     + "&past_days=7&forecast_days=8&timezone=auto&wind_speed_unit=ms";
   const r = await fetch(u);
@@ -528,27 +544,92 @@ function dayName(day,ahead){
 function dayShort(day){ return (+day.slice(8,10))+"/"+(+day.slice(5,7)); }
 
 /* ---------- per-hour score ---------- */
-function scoreAt(wx,i,mud){
-  const h=wx.hourly, T=TERRAIN[S.terrain];
-  const eff=windEff(h.wind_speed_10m[i], h.wind_gusts_10m[i]);
-  const lp=lightPen(wx,h.time[i]);
+function scoreVals(wx,hv,timeStr,mud){
+  const T=TERRAIN[S.terrain];
+  const eff=windEff(hv.wind_speed_10m, hv.wind_gusts_10m);
+  const lp=lightPen(wx,timeStr);
   const parts={
-    regn: impRain(h.precipitation_probability[i], h.precipitation[i]),
+    regn: impRain(hv.precipitation_probability, hv.precipitation),
     vind: impWind(eff, T.wind),
     underlag: mud.frozen? 6 : impMud(mud.idx, T.mud),
-    temperatur: impTemp(h.apparent_temperature[i]),
-    uv: impUv(h.uv_index[i]),
+    temperatur: impTemp(hv.apparent_temperature),
+    uv: impUv(hv.uv_index),
+    sigt: impVis(hv.visibility),
     lys: lp
   };
   /* ingen enkelt faktor må alene nulstille scoren; det er vetoet nedenfor forbeholdt */
   Object.keys(parts).forEach(k=>{ parts[k]=clamp(parts[k],0,92); });
   let f=1; Object.values(parts).forEach(v=>{ f*= (1-v/100); });
   let score=clamp(Math.round(f*100),0,100);
-  const critical = eff>=14 || (h.precipitation[i]||0)>=6 || (h.apparent_temperature[i]||0)<=-12;
+  const critical = eff>=14 || (hv.precipitation||0)>=6 || (hv.apparent_temperature||0)<=-12
+    || (hv.visibility!=null && hv.visibility<=100);
   if(critical) score=Math.min(score,8);
   const dark=lp>=100;
   if(dark) score=Math.min(score,8);
   return {score,parts,eff,dark,critical};
+}
+function hourVals(h,i){
+  return {
+    precipitation_probability: h.precipitation_probability[i],
+    precipitation: h.precipitation[i],
+    apparent_temperature: h.apparent_temperature[i],
+    wind_speed_10m: h.wind_speed_10m[i],
+    wind_gusts_10m: h.wind_gusts_10m[i],
+    uv_index: h.uv_index[i],
+    visibility: h.visibility[i]
+  };
+}
+function scoreAt(wx,i,mud){
+  return scoreVals(wx, hourVals(wx.hourly,i), wx.hourly.time[i], mud);
+}
+/* ---------- glidende overgang omkring solopgang/-nedgang ----------
+   Vejrdata kommer kun i heltimer, men lysstyrken skifter meget på 45 min.
+   Nær skumring/gry indsætter vi 15-minutters mellempunkter ved at
+   interpolere de øvrige vejrvariable lineært mellem to heltimer, mens
+   lysstraffen (som kun afhænger af klokkeslæt) regnes præcist.          */
+function addMinISO(t,mins){
+  const total=(+t.slice(11,13))*60+(+t.slice(14,16))+Math.round(mins);
+  const H=Math.floor(total/60)%24, M=((total%60)+60)%60;
+  return t.slice(0,11)+String(H).padStart(2,"0")+":"+String(M).padStart(2,"0");
+}
+function interpAt(wx,i,frac){
+  const h=wx.hourly, lerp=(a,b)=>(a==null||b==null)?(a??b):a+(b-a)*frac;
+  const lerpDeg=(a,b)=>{ if(a==null||b==null) return a??b; const d=((b-a+540)%360)-180; return (a+d*frac+360)%360; };
+  return {
+    temperature_2m: lerp(h.temperature_2m[i],h.temperature_2m[i+1]),
+    apparent_temperature: lerp(h.apparent_temperature[i],h.apparent_temperature[i+1]),
+    precipitation: lerp(h.precipitation[i],h.precipitation[i+1]),
+    precipitation_probability: lerp(h.precipitation_probability[i],h.precipitation_probability[i+1]),
+    wind_speed_10m: lerp(h.wind_speed_10m[i],h.wind_speed_10m[i+1]),
+    wind_gusts_10m: lerp(h.wind_gusts_10m[i],h.wind_gusts_10m[i+1]),
+    wind_direction_10m: lerpDeg(h.wind_direction_10m[i],h.wind_direction_10m[i+1]),
+    uv_index: lerp(h.uv_index[i],h.uv_index[i+1]),
+    cloud_cover: lerp(h.cloud_cover[i],h.cloud_cover[i+1]),
+    visibility: lerp(h.visibility[i],h.visibility[i+1])
+  };
+}
+function scoreAtSub(wx,i,frac,mud){
+  return scoreVals(wx, interpAt(wx,i,frac), addMinISO(wx.hourly.time[i],frac*60), mud);
+}
+function pointVals(wx,pt){
+  const h=wx.hourly;
+  if(!pt.frac) return Object.assign({time:h.time[pt.i]}, hourVals(h,pt.i), {temperature_2m:h.temperature_2m[pt.i], cloud_cover:h.cloud_cover[pt.i], wind_direction_10m:h.wind_direction_10m[pt.i]});
+  return Object.assign({time:addMinISO(h.time[pt.i],pt.frac*60)}, interpAt(wx,pt.i,pt.frac));
+}
+function pointScore(wx,pt,mud){ return pt.frac? scoreAtSub(wx,pt.i,pt.frac,mud) : scoreAt(wx,pt.i,mud); }
+function withTwilightSubpoints(wx,idxList){
+  const h=wx.hourly, out=[];
+  idxList.forEach((i,k)=>{
+    out.push({i,frac:0});
+    const next=idxList[k+1];
+    if(next===i+1){
+      const lp0=lightPen(wx,h.time[i]), lp1=lightPen(wx,h.time[next]);
+      if((lp0<100)!==(lp1<100) || Math.abs(lp1-lp0)>=25){
+        [15,30,45].forEach(m=>out.push({i,frac:m/60}));
+      }
+    }
+  });
+  return out;
 }
 
 /* ---------- maalerens optaelling ---------- */
@@ -614,6 +695,8 @@ function render(){
       h.apparent_temperature[i]<5? "Under 5 °C stivner base-plast og grebet ryger." : "Behagelig kastetemperatur."],
     ["UV","uv", cur.parts.uv, "Indeks "+fmt(h.uv_index[i],1),
       h.uv_index[i]>=6? "Beskyttelse anbefales på en 2-timers runde." : "Ingen særlig risiko."],
+    ["Sigtbarhed","sigt", cur.parts.sigt, h.visibility[i]!=null? fmt(h.visibility[i]/1000,1)+" km" : "Ukendt",
+      h.visibility[i]!=null && h.visibility[i]<3000? "Tåge/dis begrænser hvor langt du kan se landingszonen." : "God sigt."],
     ["Lys","lys", cur.parts.lys, sunLabel(wx,h.time[i]), lysNote(cur.parts.lys)]
   ];
   const FP = F.map(f=>({f:f, pct:clamp(Math.round(100-f[2]),0,100)}));
@@ -638,36 +721,41 @@ function render(){
       + '<div class="fnote">'+f[3]+' · '+f[4]+(isW?' <span class="wbadge">største begrænsning</span>':'')+'</div></div>';
   }).join("");
 
-  /* hourly strip, enten de kommende 12 timer eller en valgt dag */
+  /* hourly strip, enten de kommende 12 timer eller en valgt dag.
+     Omkring solopgang/-nedgang indsættes 15-minutters mellempunkter,
+     så scoren ikke springer hårdt mellem to heltimer (se withTwilightSubpoints). */
   const ti=todayIdxOf(wx);
-  let idxList=[], mudUse=mud;
+  let idxList=[], mudUse=mud, points=[];
   if(S.viewDay==null || S.viewDay===ti){
     S.viewDay=null;
     for(let k=0;k<12 && i+k<h.time.length;k++) idxList.push(i+k);
+    points=withTwilightSubpoints(wx,idxList);
     el("stripTitle").textContent="De næste 12 timer";
     el("btnNow").classList.add("hidden");
   }else{
     const day=wx.daily.time[S.viewDay];
     mudUse=mudForDay(wx,S.soil,S.viewDay);
     idxList=dayHours(wx,day).filter(j=>isDaylight(wx,h.time[j]));
+    const rawHrs=dayHours(wx,day);
+    points=withTwilightSubpoints(wx,rawHrs).filter(p=>p.frac || isDaylight(wx,h.time[p.i]));
     el("stripTitle").textContent=dayName(day,S.viewDay-ti)+" i dagslys";
     el("btnNow").classList.remove("hidden");
   }
   let rows="";
-  idxList.forEach((j,k)=>{
-    const s=scoreAt(wx,j,mudUse), sb=s.dark?{c:"#A63E33"}:band(s.score);
-    const uv=h.uv_index[j];
-    rows += '<div class="hr'+((S.viewDay==null&&k===0)?" now":"")+'">'
-      + '<div class="t">'+h.time[j].slice(11,16)+'</div>'
-      + '<div class="wic">'+wxIcon(h.precipitation_probability[j],h.precipitation[j],h.cloud_cover[j],windEff(h.wind_speed_10m[j],h.wind_gusts_10m[j]))+'</div>'
+  points.forEach((pt,k)=>{
+    const v=pointVals(wx,pt), s=pointScore(wx,pt,mudUse), sb=s.dark?{c:"#A63E33"}:band(s.score);
+    const uv=v.uv_index;
+    rows += '<div class="hr'+((S.viewDay==null&&k===0)?" now":"")+(pt.frac?" sub":"")+'">'
+      + '<div class="t">'+v.time.slice(11,16)+'</div>'
+      + '<div class="wic">'+wxIcon(v.precipitation_probability,v.precipitation,v.cloud_cover,windEff(v.wind_speed_10m,v.wind_gusts_10m),v.visibility)+'</div>'
       + '<div class="sc" style="color:'+sb.c+'">'+s.score+'</div>'
       + '<div class="sb" style="background:'+sb.c+';opacity:.9"></div>'
-      + '<div class="temp">'+fmt(h.temperature_2m[j])+'°</div>'
-      + '<div class="row">føles '+fmt(h.apparent_temperature[j])+'°</div>'
-      + '<div class="row">'+fmt(h.precipitation_probability[j])+' %</div>'
-      + '<div class="row"><span class="arrow" style="transform:rotate('+((h.wind_direction_10m[j]||0)+180)+'deg)">↑</span> '
-        + dirName(h.wind_direction_10m[j])+'</div>'
-      + '<div class="row">'+fmt(h.wind_speed_10m[j],1)+'/'+fmt(h.wind_gusts_10m[j],0)+'</div>'
+      + '<div class="temp">'+fmt(v.temperature_2m)+'°</div>'
+      + '<div class="row">føles '+fmt(v.apparent_temperature)+'°</div>'
+      + '<div class="row">'+fmt(v.precipitation_probability)+' %</div>'
+      + '<div class="row"><span class="arrow" style="transform:rotate('+((v.wind_direction_10m||0)+180)+'deg)">↑</span> '
+        + dirName(v.wind_direction_10m)+'</div>'
+      + '<div class="row">'+fmt(v.wind_speed_10m,1)+'/'+fmt(v.wind_gusts_10m,0)+'</div>'
       + '<div class="row" style="margin-top:4px"><span class="uvchip" style="background:'+uvColor(uv)+';color:'+((uv!=null&&uv>=6)?"#fff":"#111")+'">'+fmt(uv,1)+'</span></div>'
       + '</div>';
   });
@@ -708,6 +796,7 @@ function render(){
   else if(mud.idx>=60) tips.push("<strong>Fodfæstet er dagens risiko.</strong> "+mudLabel(mud)+" bund. Kort x-step eller stående kast, sko med greb. Nedslagsfoden er der, skader sker.");
   else if(mud.idx>=35) tips.push("<strong>Blød bund.</strong> Regn med lidt kortere kast, discen ruller ikke ud. Sigt efter at lande på fairway frem for at plukke afstand.");
   if(h.uv_index[i]>=6) tips.push("<strong>UV "+fmt(h.uv_index[i],1)+" (WHO: høj).</strong> En runde er to timer i solen. Solcreme, kasket og vand.");
+  if(h.visibility[i]!=null && h.visibility[i]<2000) tips.push("<strong>Tæt tåge.</strong> Sigt under "+fmt(h.visibility[i]/1000,1)+" km gør det svært at spotte discs i landingszonen og andre spillere. Spil kortere hul-for-hul og hold øje med discens landingssted, ikke kun kastet.");
   if(!tips.length) tips.push("<strong>Ingen særlige forholdsregler.</strong> Standardtaske og en flaske vand. Brug den slags dag til at arbejde med linjer frem for afstand.");
   el("tips").innerHTML=tips.map(t=>"<li>"+t+"</li>").join("");
 
