@@ -545,11 +545,11 @@ function lysNote(pen){
 }
 function uvNote(uv){
   if(uv==null) return "UV ukendt.";
-  if(uv<3)  return "WHO: lav. Ingen beskyttelse nødvendig.";
-  if(uv<6)  return "WHO: moderat. Beskyttelse er påkrævet allerede fra indeks 3, og en runde er to timer i det fri.";
-  if(uv<8)  return "WHO: høj. Solcreme, kasket og solbriller, og søg skygge mellem kastene.";
-  if(uv<11) return "WHO: meget høj. Undgå timerne midt på dagen, hvor solen står højest.";
-  return "WHO: ekstrem. Flyt runden til morgen eller aften.";
+  if(uv<3)  return "Ingen beskyttelse nødvendig.";
+  if(uv<6)  return "Solcreme faktor 30 og kasket.";
+  if(uv<8)  return "Solcreme faktor 30+, kasket og solbriller.";
+  if(uv<11) return "Solcreme faktor 30+, dæk nakken, og hold pauserne i skyggen.";
+  return "Spil morgen eller aften i stedet.";
 }
 function tempNote(f){
   if(f==null||isNaN(f)) return "Temperatur ukendt.";
@@ -830,9 +830,9 @@ function render(){
   if(mud.frozen) tips.push("<strong>Frossen bund.</strong> Hårdt underlag giver lange skid, men også glatte nedslagsfødder. Kort x-step, ingen fuld udskridning.");
   else if(mud.idx>=60) tips.push("<strong>Fodfæstet er dagens risiko.</strong> "+mudLabel(mud)+" bund. Kort x-step eller stående kast, sko med greb. Nedslagsfoden er der, skader sker.");
   else if(mud.idx>=35) tips.push("<strong>Blød bund.</strong> Regn med lidt kortere kast, discen ruller ikke ud. Sigt efter at lande på fairway frem for at plukke afstand.");
-  if(h.uv_index[i]>=8) tips.push("<strong>UV "+fmt(h.uv_index[i],1)+" (WHO: meget høj).</strong> Overvej at lægge runden uden om timerne midt på dagen. Spiller du alligevel, så dæk nakke og skuldre, brug solcreme faktor 30+ og genpåfør efter ni huller.");
-  else if(h.uv_index[i]>=6) tips.push("<strong>UV "+fmt(h.uv_index[i],1)+" (WHO: høj).</strong> Solcreme faktor 30+, kasket og solbriller. Sveden tager det meste undervejs, så genpåfør efter ni huller, og hold pauserne i skyggen.");
-  else if(h.uv_index[i]>=3) tips.push("<strong>UV "+fmt(h.uv_index[i],1)+" (WHO: moderat).</strong> Beskyttelse er påkrævet fra indeks 3, ikke først ved 6. To timer i det fri rækker til en solskoldning: solcreme på ansigt, nakke og arme plus kasket. Nakke og ører brænder først, fordi du kigger opad efter discen.");
+  if(h.uv_index[i]>=8) tips.push("<strong>Solen er dagens risiko.</strong> UV "+fmt(h.uv_index[i],1)+". Læg helst runden uden om timerne midt på dagen. Spiller du alligevel: solcreme faktor 30+, dækkede skuldre og en pause i skyggen undervejs.");
+  else if(h.uv_index[i]>=6) tips.push("<strong>Solcreme og genpåføring.</strong> UV "+fmt(h.uv_index[i],1)+". Faktor 30+, kasket og solbriller. Sveden tager det meste undervejs, så smør igen efter ni huller.");
+  else if(h.uv_index[i]>=3) tips.push("<strong>Solcreme i tasken.</strong> UV "+fmt(h.uv_index[i],1)+". To timer i det fri rækker til en solskoldning. Faktor 30 på ansigt, nakke og arme plus kasket. Nakke og ører brænder først, fordi du kigger opad efter discen.");
   if(h.visibility[i]!=null && h.visibility[i]<2000) tips.push("<strong>Tæt tåge.</strong> Sigt under "+fmt(h.visibility[i]/1000,1)+" km gør det svært at spotte discs i landingszonen og andre spillere. Spil kortere hul-for-hul og hold øje med discens landingssted, ikke kun kastet.");
   if(!tips.length) tips.push("<strong>Ingen særlige forholdsregler.</strong> Standardtaske og en flaske vand. Brug den slags dag til at arbejde med linjer frem for afstand.");
   el("tips").innerHTML=tips.map(t=>"<li>"+t+"</li>").join("");
