@@ -316,11 +316,11 @@
         <li><strong>Regn</strong>: nedbørssandsynlighed gange intensitet. Vådt greb koster mere end vådt tøj.</li>
         <li><strong>Vind</strong>: effektiv vind = 0,55 × middelvind + 0,45 × vindstød, fordi det er stødene, der ødelægger et kast. Under 2 m/s koster ingenting, 8 m/s giver 65 %, og 12 m/s giver 27 %. Skovbane vægter vind × 0,55, åben bane × 1,15.</li>
         <li><strong>Underlag</strong>: mudderindeks bygget på vægtet nedbør de sidste 7 døgn minus fordampning (ET0), justeret for årstid og blandet med jordfugtighed, hvor modellen leverer den. Maksimalt fradrag er 32 point, fordi mudder gør en runde træls, ikke umulig.</li>
-        <li><strong>Temperatur</strong>: under 10 °C stiger fradraget tiltagende stejlt og giver 40 % ved frysepunktet. Derunder falder det 2,2 point per grad. Over 26 °C koster 2,5 point per grad. Bemærk at vindafkøling allerede ligger i føles-som-tallet, mens vinden desuden trækker ned som selvstændig faktor.</li>
+        <li><strong>Temperatur</strong>: komfortbåndet er 10–23 °C og er sat efter en spiller i bevægelse med taske, ikke en der står stille. Under 10 °C stiger fradraget tiltagende stejlt og giver 40 % ved frysepunktet, og derunder falder det 2,2 point per grad. Over 23 °C stiger fradraget tilsvarende tiltagende: 27 °C koster 10 point, 30 °C koster 23, og 35 °C koster 52. Varme straffes, fordi sved i håndfladen giver tidlige udslip på samme måde som vådt greb, og fordi en runde er 8–12 km gang, hvor kraften falder i takt med væsketabet. Bemærk at både vindafkøling, luftfugtighed og sol allerede ligger i føles-som-tallet, mens vinden desuden trækker ned som selvstændig faktor.</li>
         <li><strong>UV</strong>: påvirker ikke spillet, kun huden. Derfor kun et lille fradrag efter WHO-skalaen.</li>
         <li><strong>Sigtbarhed</strong>: baseret på Open-Meteos sigtbarhedstal (meter). Over 8 km koster intet, under 3 km (dis/let tåge) begynder fradraget, og under 1 km (tåge) stiger det hurtigt. Det er uafhængigt af soltid, så en tåget middag straffes samme vej som en klar aften.</li>
       </ul>
-      <p>Fire forhold er vetogrænser, som låser scoren på højst 8 % uanset resten: effektiv vind fra 14 m/s, nedbør fra 6 mm i timen, føles-som fra &minus;12 °C og derunder, og sigt på 100 meter og derunder (tæt tåge). Det er dem, der udløser "Bliv hjemme".</p>
+      <p>Fem forhold er vetogrænser, som låser scoren på højst 8 % uanset resten: effektiv vind fra 14 m/s, nedbør fra 6 mm i timen, føles-som fra &minus;12 °C og derunder, føles-som fra 38 °C og derover, og sigt på 100 meter og derunder (tæt tåge). Det er dem, der udløser "Bliv hjemme".</p>
       <p>Uden for dagslys (fra 20 min efter solopgang til 15 min før solnedgang) låses scoren på maks. 8. Fordi vejrdata kun findes for hele timer, men lyset skifter meget på under en time, indsætter time-for-time-oversigten ekstra punkter hvert 15. minut omkring solopgang og solnedgang. De øvrige vejrtal interpoleres lineært mellem de to nærmeste heltimer i de punkter, mens lyset regnes præcist ud fra klokkeslættet – det giver en glidende overgang i stedet for et hårdt spring mellem to timer.</p>
       <p>Data: Open-Meteo (vejr, jordfugtighed, ET0). Banetypen vælger du selv, fordi den ændrer vægtningen af vind og mudder.</p>
     </details>
@@ -355,10 +355,14 @@ const TERRAIN = {
 function windEff(sp,gu){ return 0.55*(sp||0) + 0.45*(gu||sp||0); }
 function impWind(eff,mul){ const e=Math.max(0,eff-2); return Math.min(100, Math.pow(e,1.45)*2.6*mul); }
 function impRain(prob,mm){ const p=clamp((prob||0)/100,0,1); return Math.min(100, p*(12+Math.min(mm||0,8)*13)); }
+/* Komfortbaandet er sat efter en aktiv spiller med taske, ikke en der staar stille.
+   Varmesiden er tiltagende stejl ligesom kuldesiden: sved koster greb, og en runde
+   paa 8-12 km i varme koster kraft paa de sidste huller. Tallet er foeles-som, som
+   allerede indeholder luftfugtighed og sol, saa fugt skal ikke laegges oveni her. */
 function impTemp(f){
   if(f==null||isNaN(f)) return 0;
-  if(f>=10 && f<=26) return 0;
-  if(f>26) return Math.min(100,(f-26)*2.5);
+  if(f>=10 && f<=23) return 0;
+  if(f>23) return Math.min(100, 1.25*Math.pow(f-23, 1.5));  /* 23 til 35: 0 til 52, tiltagende stejl */
   if(f>=0) return 60*Math.pow((10-f)/10, 1.6);  /* 10 til 0 grader: 0 til 60, tiltagende stejl */
   return Math.min(100, 60 + (-f)*2.2);          /* 0 til -18: 60 til 100 */
 }
@@ -389,6 +393,7 @@ function critReason(h,i,eff){
   if(eff>=14) return "vindstød og middelvind på tilsammen "+fmt(eff,1)+" m/s effektiv vind";
   if((h.precipitation[i]||0)>=6) return "kraftig nedbør på "+fmt(h.precipitation[i],1)+" mm i timen";
   if((h.apparent_temperature[i]||0)<=-12) return "streng frost, føles som "+fmt(h.apparent_temperature[i],1)+" °C";
+  if((h.apparent_temperature[i]||0)>=38) return "ekstrem varme, føles som "+fmt(h.apparent_temperature[i],1)+" °C";
   if(h.visibility[i]!=null && h.visibility[i]<=100) return "tæt tåge med "+fmt(h.visibility[i])+" meters sigt";
   return "kritisk vejr";
 }
@@ -529,6 +534,16 @@ function lysNote(pen){
   if(pen<45) return "Skumring. Regn med længere tid på at finde discs i roughen.";
   return "Sidste rest af lys. Tag en lys disc, eller vent til i morgen.";
 }
+function tempNote(f){
+  if(f==null||isNaN(f)) return "Temperatur ukendt.";
+  if(f<5)  return "Under 5 °C stivner base-plast og grebet ryger.";
+  if(f<10) return "Køligt. Hold hænderne varme mellem kastene.";
+  if(f<=23) return "Behagelig kastetemperatur.";
+  if(f<27) return "Varmt. Svedige hænder koster greb, så hold et håndklæde ved hånden.";
+  if(f<31) return "Sved i håndfladen giver tidlige udslip. Drik mere, end du tror.";
+  if(f<35) return "Kraftig varme. Kraften falder på de sidste huller, og væskebehovet er stort.";
+  return "Ekstrem varme. En fuld runde er en helbredsrisiko, ikke en udfordring.";
+}
 function dayHours(wx,day){
   const t=wx.hourly.time, out=[];
   for(let j=0;j<t.length;j++) if(t[j].slice(0,10)===day) out.push(j);
@@ -562,6 +577,7 @@ function scoreVals(wx,hv,timeStr,mud){
   let f=1; Object.values(parts).forEach(v=>{ f*= (1-v/100); });
   let score=clamp(Math.round(f*100),0,100);
   const critical = eff>=14 || (hv.precipitation||0)>=6 || (hv.apparent_temperature||0)<=-12
+    || (hv.apparent_temperature||0)>=38
     || (hv.visibility!=null && hv.visibility<=100);
   if(critical) score=Math.min(score,8);
   const dark=lp>=100;
@@ -692,7 +708,7 @@ function render(){
     ["Underlag","underlag", cur.parts.underlag, mudLabel(mud)+" ("+mud.idx+")",
       "Baseret på nedbør og fordampning de seneste 7 døgn"+(S.soil!=null?" plus målt jordfugtighed":"")+"."],
     ["Temperatur","temperatur", cur.parts.temperatur, fmt(h.temperature_2m[i],1)+" °C, føles "+fmt(h.apparent_temperature[i],1)+" °C",
-      h.apparent_temperature[i]<5? "Under 5 °C stivner base-plast og grebet ryger." : "Behagelig kastetemperatur."],
+      tempNote(h.apparent_temperature[i])],
     ["UV","uv", cur.parts.uv, "Indeks "+fmt(h.uv_index[i],1),
       h.uv_index[i]>=6? "Beskyttelse anbefales på en 2-timers runde." : "Ingen særlig risiko."],
     ["Sigtbarhed","sigt", cur.parts.sigt, h.visibility[i]!=null? fmt(h.visibility[i]/1000,1)+" km" : "Ukendt",
@@ -792,6 +808,8 @@ function render(){
   if(h.precipitation[i]>0.2 || h.precipitation_probability[i]>60) tips.push("<strong>To håndklæder.</strong> Ét til discen, ét der bliver tørt i tasken. Base-plast griber bedre end blank premium i vådt vejr.");
   if(h.apparent_temperature[i]<=-10) tips.push("<strong>Frostrisiko.</strong> Føles som "+fmt(h.apparent_temperature[i],1)+" °C. Bar hud tager skade på minutter, plastikken bliver skør og kan revne ved anslag. Det her er ikke et spørgsmål om at være sej.");
   else if(h.apparent_temperature[i]<5) tips.push("<strong>Kuldeplast.</strong> Under 5 °C bliver DX og D-line stive. GStar og gummiagtige putterplast holder grebet. Varm skulderen ordentligt op inden fuld kraft.");
+  else if(h.apparent_temperature[i]>=31) tips.push("<strong>Varmen er dagens risiko.</strong> Føles som "+fmt(h.apparent_temperature[i],1)+" °C. En runde er to timers arbejde i solen: regn med en liter vand i timen, hold pauserne i skyggen, og overvej ni huller frem for atten. Kraften i rotationen falder, længe før du selv opdager det.");
+  else if(h.apparent_temperature[i]>=27) tips.push("<strong>Sved i grebet.</strong> Føles som "+fmt(h.apparent_temperature[i],1)+" °C. Et tørt håndklæde og en pose kridt redder flere kast end noget discvalg, for en glat håndflade slipper discen for tidligt og sender den op til højre. Varm luft er tyndere og plastikken blødere, så tag en grad mere overstabilt end normalt.");
   if(mud.frozen) tips.push("<strong>Frossen bund.</strong> Hårdt underlag giver lange skid, men også glatte nedslagsfødder. Kort x-step, ingen fuld udskridning.");
   else if(mud.idx>=60) tips.push("<strong>Fodfæstet er dagens risiko.</strong> "+mudLabel(mud)+" bund. Kort x-step eller stående kast, sko med greb. Nedslagsfoden er der, skader sker.");
   else if(mud.idx>=35) tips.push("<strong>Blød bund.</strong> Regn med lidt kortere kast, discen ruller ikke ud. Sigt efter at lande på fairway frem for at plukke afstand.");
