@@ -108,21 +108,43 @@
 
   .cardhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
   .cardhead button{padding:8px 14px;font-size:13px}
-  .day{display:grid;grid-template-columns:20px 60px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;
-       background:var(--field);border:0;border-radius:18px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
-  .day:hover{background:#E9EDF5}
-  .day.sel{background:#EBEDFE;box-shadow:inset 0 0 0 1.5px var(--accent)}
-  .dhead{display:flex;flex-direction:column;line-height:1.25}
   .dn{font-size:14px;font-weight:700;letter-spacing:-.01em}
   .dd{font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
-  .spark{display:flex;align-items:flex-end;gap:2px;height:30px;
-         background:linear-gradient(to top,transparent 0,transparent 59%,var(--line) 59%,var(--line) 60.5%,transparent 60.5%)}
-  .spark i{flex:1;border-radius:3px;opacity:.85;min-width:2px}
-  .dsc{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
-  .dsc span{font-size:12px;font-weight:600;margin-left:1px}
-  .dmeta{grid-column:1/5;font-size:12px;color:var(--ink-soft);line-height:1.6;font-variant-numeric:tabular-nums;margin-top:2px}
-  .dmeta .uvchip{margin-left:2px}
-  @media (max-width:520px){ .day{grid-template-columns:18px 52px 1fr auto;gap:10px} .dsc{font-size:23px} .dmeta{font-size:11.5px} }
+
+  /* ugematrix: 7 dage x dagslystimer. Cellerne bruger de samme fem baandfarver
+     som resten af appen ved fuld maetning, saa ingen score fader ud i lyserdt. */
+  .wk{display:grid;gap:3px;align-items:center;--wkg:88px;--wkb:34px}
+  .wkh{font-size:10px;font-weight:600;color:var(--ink-soft);text-align:center;
+       font-variant-numeric:tabular-nums;padding-bottom:3px}
+  .wkday{display:flex;flex-direction:column;line-height:1.2;padding:5px 10px 5px 8px;cursor:pointer;
+         border-radius:10px;margin-left:-8px;overflow:hidden}
+  .wkday .dn,.wkday .dd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wkday:hover{background:var(--field)}
+  .wkday.on{background:#EBEDFE}
+  .wkc{height:28px;border-radius:5px;cursor:pointer;display:block;background:var(--track)}
+  .wkc.hit:hover{box-shadow:inset 0 0 0 2px var(--ink)}
+  .wkc.sel{box-shadow:inset 0 0 0 2.5px var(--ink)}
+  .wkc.top{box-shadow:inset 0 0 0 2px var(--accent)}
+  .wksc{text-align:right;font-size:15px;font-weight:800;letter-spacing:-.03em;
+        font-variant-numeric:tabular-nums;cursor:pointer}
+  .wkout{display:flex;align-items:center;gap:12px;margin-top:15px;padding:12px 14px;border-radius:16px;background:var(--field)}
+  .wkout .v{font-size:22px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1;flex:none}
+  .wkout .v span{font-size:11px;font-weight:600;margin-left:1px}
+  .wkout .t{font-size:14px;font-weight:700;letter-spacing:-.01em}
+  .wkout .m{font-size:12px;color:var(--ink-soft);line-height:1.5;font-variant-numeric:tabular-nums;margin-top:2px}
+  .wklg{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--ink-soft)}
+  .wklg i{width:14px;height:14px;border-radius:4px;display:inline-block;vertical-align:-3px;margin-right:5px}
+  @media (max-width:520px){
+    .wk{gap:2px;--wkg:70px;--wkb:34px}
+    .wkc{height:22px;border-radius:4px}
+    .wkh{font-size:9.5px}
+    .wkh:not(.k){visibility:hidden}
+    .wkday{padding:5px 6px 5px 6px;margin-left:-6px}
+    .wkday .dn{font-size:12.5px}
+    .wkday .dd{font-size:10.5px}
+    .wksc{font-size:13px}
+    .wklg{gap:10px;font-size:11px}
+  }
 
   .gauge{position:relative;margin:4px auto 2px;max-width:280px}
   .gcenter{position:absolute;left:50%;top:57%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:62%}
@@ -151,7 +173,6 @@
           background:#F2E4C2;color:#8A6400;border-radius:999px;padding:2px 8px;margin-left:4px;white-space:nowrap}
   .wic{display:flex;justify-content:center;color:var(--ink-soft);margin:3px 0 1px}
   .wic svg{width:15px;height:15px}
-  .dic{margin:0}
 
   /* Hero-banner */
   .hero{display:block;position:relative;overflow:hidden;isolation:isolate;
@@ -299,8 +320,10 @@
 
   <div class="card hidden" id="weekCard">
     <h2>De næste 7 dage</h2>
-    <div id="week"></div>
-    <div class="muted" style="margin-top:12px">Den vandrette streg i søjlerne markerer 60 %, grænsen for en god runde. Tryk på en dag for at se den time for time. Underlaget fremskrives med forventet nedbør og fordampning.</div>
+    <div class="wk" id="week"></div>
+    <div class="wkout" id="weekOut"></div>
+    <div class="wklg" id="weekLegend"></div>
+    <div class="muted" style="margin-top:12px">Hver rude er én time. Kun dagslystimer har farve. Tryk på en rude for at se tidspunktet, eller på dagens navn for at åbne hele dagen time for time. Underlaget fremskrives med forventet nedbør og fordampning.</div>
   </div>
 
   <div class="card hidden" id="bagCard">
@@ -337,7 +360,7 @@
 
 const S = {
   lat:null, lon:null, label:"Din position", intro:true,
-  wx:null, soil:null, mud:null, viewDay:null,
+  wx:null, soil:null, mud:null, viewDay:null, weekSel:null,
   terrain:"blandet"
 };
 
@@ -449,7 +472,7 @@ function wxIcon(prob,mm,cloud,eff,vis){
 async function getWeather(lat,lon){
   const u = "https://api.open-meteo.com/v1/forecast?latitude="+lat.toFixed(4)+"&longitude="+lon.toFixed(4)
     + "&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,cloud_cover,visibility"
-    + "&daily=cloud_cover_mean,sunrise,sunset,precipitation_sum,precipitation_probability_max,et0_fao_evapotranspiration,temperature_2m_min,temperature_2m_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max"
+    + "&daily=sunrise,sunset,precipitation_sum,precipitation_probability_max,et0_fao_evapotranspiration,temperature_2m_min,temperature_2m_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,uv_index_max"
     + "&past_days=7&forecast_days=8&timezone=auto&wind_speed_unit=ms";
   const r = await fetch(u);
   if(!r.ok) throw new Error("Vejrdata kunne ikke hentes ("+r.status+")");
@@ -758,8 +781,9 @@ function render(){
      Omkring solopgang/-nedgang indsættes 15-minutters mellempunkter,
      så scoren ikke springer hårdt mellem to heltimer (se withTwilightSubpoints). */
   const ti=todayIdxOf(wx);
+  const pickedHour = S.weekSel && S.weekSel.hh!=null;
   let idxList=[], mudUse=mud, points=[];
-  if(S.viewDay==null || S.viewDay===ti){
+  if(S.viewDay==null || (S.viewDay===ti && !pickedHour)){
     S.viewDay=null;
     for(let k=0;k<12 && i+k<h.time.length;k++) idxList.push(i+k);
     points=withTwilightSubpoints(wx,idxList);
@@ -778,7 +802,9 @@ function render(){
   points.forEach((pt,k)=>{
     const v=pointVals(wx,pt), s=pointScore(wx,pt,mudUse), sb=s.dark?{c:"#A63E33"}:band(s.score);
     const uv=v.uv_index;
-    rows += '<div class="hr'+((S.viewDay==null&&k===0)?" now":"")+(pt.frac?" sub":"")+'">'
+    const focal = S.viewDay==null ? (k===0)
+      : (!pt.frac && S.weekSel && S.weekSel.hh!=null && +v.time.slice(11,13)===S.weekSel.hh);
+    rows += '<div class="hr'+(focal?" now":"")+(pt.frac?" sub":"")+'">'
       + '<div class="t">'+v.time.slice(11,16)+'</div>'
       + '<div class="wic">'+wxIcon(v.precipitation_probability,v.precipitation,v.cloud_cover,windEff(v.wind_speed_10m,v.wind_gusts_10m),v.visibility)+'</div>'
       + '<div class="sc" style="color:'+sb.c+'">'+s.score+'</div>'
@@ -840,47 +866,111 @@ function render(){
   ["mainCard","factorCard","hourCard","weekCard","bagCard","methodCard"].forEach(id=>el(id).classList.remove("hidden"));
 }
 
-function renderWeek(){
-  const wx=S.wx, h=wx.hourly, d=wx.daily, ti=todayIdxOf(wx);
-  let out="";
+/* Kolonnerne skal daekke alle dagslystimer i ugen, ikke kun dagens, saa
+   raekkerne staar under hinanden paa samme tidsakse hele aaret rundt. */
+function weekHourRange(wx){
+  const h=wx.hourly, d=wx.daily, ti=todayIdxOf(wx);
+  let lo=99, hi=-1;
   for(let k=0;k<7;k++){
     const di=ti+k; if(di>=d.time.length) break;
-    const day=d.time[di], mud=mudForDay(wx,S.soil,di);
-    const hrs=dayHours(wx,day).filter(j=>isDaylight(wx,h.time[j]));
-    if(!hrs.length) continue;
-    const sc=hrs.map(j=>scoreAt(wx,j,mud).score);
-    let best=null;
-    for(let x=0;x<hrs.length-1;x++){
-      if(hrs[x+1]!==hrs[x]+1) continue;
-      const avg=(sc[x]+sc[x+1])/2;
-      if(!best||avg>best.avg) best={avg, from:+h.time[hrs[x]].slice(11,13)};
-    }
-    const val = best? Math.round(best.avg) : Math.round(sc.reduce((a,b)=>a+b,0)/sc.length);
-    const b=band(val), uv=d.uv_index_max[di];
-    const spark=sc.map(v=>'<i style="height:'+Math.max(7,v)+'%;background:'+band(v).c+'"></i>').join("");
-    const win = best? String(best.from).padStart(2,"0")+"–"+String((best.from+2)%24).padStart(2,"0") : "–";
-    const meta = "Bedste "+win+" &middot; "+fmt(d.temperature_2m_max[di])+"°/"+fmt(d.temperature_2m_min[di])+"°"
-      + " &middot; "+fmt(d.precipitation_sum[di],1)+" mm ("+fmt(d.precipitation_probability_max[di])+" %)"
-      + " &middot; "+fmt(d.wind_speed_10m_max[di],1)+"/"+fmt(d.wind_gusts_10m_max[di],0)+" m/s "+dirName(d.wind_direction_10m_dominant[di])
-      + " &middot; "+mudLabel(mud);
-    const ic=wxIcon(d.precipitation_probability_max[di], (d.precipitation_sum[di]||0)/6, d.cloud_cover_mean[di],
-                    windEff(d.wind_speed_10m_max[di], d.wind_gusts_10m_max[di]));
-    out += '<button class="day'+((S.viewDay===di)?" sel":"")+'" data-di="'+di+'">'
-      + '<div class="wic dic">'+ic+'</div>'
-      + '<div class="dhead"><span class="dn">'+dayName(day,k)+'</span><span class="dd">'+dayShort(day)+'</span></div>'
-      + '<div class="spark">'+spark+'</div>'
-      + '<div class="dsc" style="color:'+b.c+'">'+val+'<span>%</span></div>'
-      + '<div class="dmeta">'+meta+' <span class="uvchip" style="background:'+uvColor(uv)+';color:'+((uv!=null&&uv>=6)?"#fff":"#111")+'">UV '+fmt(uv,1)+'</span></div>'
-      + '</button>';
+    dayHours(wx,d.time[di]).forEach(j=>{
+      if(!isDaylight(wx,h.time[j])) return;
+      const hh=+h.time[j].slice(11,13);
+      if(hh<lo) lo=hh;
+      if(hh>hi) hi=hh;
+    });
   }
-  el("week").innerHTML=out;
-  el("week").querySelectorAll("button[data-di]").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      const di=+btn.dataset.di;
-      S.viewDay = (S.viewDay===di)? null : di;
+  return hi<0 ? {lo:8, hi:16} : {lo:lo, hi:hi};
+}
+
+function dayMeta(wx,di,mud){
+  const d=wx.daily, uv=d.uv_index_max[di];
+  return fmt(d.temperature_2m_max[di])+"°/"+fmt(d.temperature_2m_min[di])+"°"
+    + " &middot; "+fmt(d.precipitation_sum[di],1)+" mm ("+fmt(d.precipitation_probability_max[di])+" %)"
+    + " &middot; "+fmt(d.wind_speed_10m_max[di],1)+"/"+fmt(d.wind_gusts_10m_max[di],0)+" m/s "+dirName(d.wind_direction_10m_dominant[di])
+    + " &middot; "+mudLabel(mud)
+    + ' <span class="uvchip" style="background:'+uvColor(uv)+';color:'+((uv!=null&&uv>=6)?"#fff":"#111")+'">UV '+fmt(uv,1)+'</span>';
+}
+
+function renderWeek(){
+  const wx=S.wx, h=wx.hourly, d=wx.daily, ti=todayIdxOf(wx);
+  const R=weekHourRange(wx), N=R.hi-R.lo+1;
+
+  const at={};                                   /* "2026-08-19T16" -> timeindeks */
+  h.time.forEach((t,j)=>{ at[t.slice(0,13)]=j; });
+
+  const days=[];
+  let top={v:-1, di:null, hh:null};
+  for(let k=0;k<7;k++){
+    const di=ti+k; if(di>=d.time.length) break;
+    const day=d.time[di], mud=mudForDay(wx,S.soil,di), cells=[];
+    for(let hh=R.lo; hh<=R.hi; hh++){
+      const j=at[day+"T"+String(hh).padStart(2,"0")];
+      if(j==null || !isDaylight(wx,h.time[j])){ cells.push(null); continue; }
+      const sc=scoreAt(wx,j,mud).score;
+      cells.push({hh:hh, sc:sc});
+      if(sc>top.v) top={v:sc, di:di, hh:hh};
+    }
+    let best=0;
+    for(let x=0;x<cells.length-1;x++){
+      if(!cells[x]||!cells[x+1]) continue;
+      best=Math.max(best, Math.round((cells[x].sc+cells[x+1].sc)/2));
+    }
+    days.push({di:di, day:day, k:k, mud:mud, cells:cells, best:best});
+  }
+  if(!days.length){ el("week").innerHTML=""; el("weekOut").innerHTML=""; el("weekLegend").innerHTML=""; return; }
+
+  const sel = S.weekSel || {di:days[0].di, hh:null};
+
+  const grid=el("week");
+  grid.style.gridTemplateColumns="var(--wkg) repeat("+N+",minmax(0,1fr)) var(--wkb)";
+  let out='<div></div>';
+  /* paa smalle skaerme vises kun hver tredje timeetiket, ellers loeber de sammen */
+  for(let hh=R.lo; hh<=R.hi; hh++) out+='<div class="wkh'+(hh%3===0?" k":"")+'">'+String(hh).padStart(2,"0")+'</div>';
+  out+='<div class="wkh k">bedst</div>';
+
+  days.forEach(D=>{
+    out+='<div class="wkday'+(sel.di===D.di?" on":"")+'" data-di="'+D.di+'" role="button" tabindex="0">'
+       + '<span class="dn">'+dayName(D.day,D.k)+'</span><span class="dd">'+dayShort(D.day)+'</span></div>';
+    D.cells.forEach(c=>{
+      if(!c){ out+='<span class="wkc"></span>'; return; }
+      const isSel = sel.di===D.di && sel.hh===c.hh;
+      const isTop = top.di===D.di && top.hh===c.hh;
+      out+='<span class="wkc hit'+(isSel?" sel":(isTop?" top":""))+'" data-di="'+D.di+'" data-hh="'+c.hh+'"'
+         + ' style="background:'+band(c.sc).c+'" title="'+dayName(D.day,D.k)+' '+String(c.hh).padStart(2,"0")+':00 · '+c.sc+' %"></span>';
+    });
+    out+='<div class="wksc" data-di="'+D.di+'" style="color:'+band(D.best).c+'">'+D.best+'</div>';
+  });
+  grid.innerHTML=out;
+
+  /* udlaesning for den valgte rude, eller for dagen hvis ingen rude er valgt */
+  const D = days.find(x=>x.di===sel.di) || days[0];
+  const cell = sel.hh==null ? null : D.cells.find(c=>c && c.hh===sel.hh);
+  const val = cell ? cell.sc : D.best;
+  const b = band(val);
+  const isTopSel = cell && top.di===D.di && top.hh===cell.hh;
+  el("weekOut").innerHTML =
+      '<div class="v" style="color:'+b.c+'">'+val+'<span>%</span></div>'
+    + '<div><div class="t">'+dayName(D.day,D.k)+(cell? " kl. "+String(cell.hh).padStart(2,"0") : ", bedste 2 timer")+' · '
+    + '<span style="color:'+b.c+'">'+b.t+'</span>'+(isTopSel? " · ugens bedste time":"")+'</div>'
+    + '<div class="m">'+dayMeta(wx,D.di,D.mud)+'</div></div>';
+
+  el("weekLegend").innerHTML = [[90,"Perfekt"],[70,"God"],[50,"Tilpasning"],[30,"Krævende"],[10,"Bliv hjemme"]]
+    .map(x=>'<span><i style="background:'+band(x[0]).c+'"></i>'+x[1]+'</span>').join("")
+    + '<span><i style="background:var(--track)"></i>Mørkt</span>';
+
+  grid.querySelectorAll("[data-di]").forEach(node=>{
+    const go = () => {
+      const di=+node.dataset.di, hh = node.dataset.hh==null ? null : +node.dataset.hh;
+      S.weekSel={di:di, hh:hh};
+      S.viewDay = (di===ti && hh==null) ? null : di;
       render();
       el("hourCard").scrollIntoView({behavior:"smooth",block:"start"});
-    });
+    };
+    node.addEventListener("click",go);
+    if(node.getAttribute("role")==="button"){
+      node.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } });
+    }
   });
 }
 
@@ -909,7 +999,7 @@ async function loadFor(lat,lon,label,namePromise){
   setStatus("Henter vejr og underlag…");
   try{
     const [wx,soil]=await Promise.all([getWeather(lat,lon), getSoil(lat,lon)]);
-    S.wx=wx; S.soil=soil; S.lat=lat; S.lon=lon; S.label=label; S.viewDay=null;
+    S.wx=wx; S.soil=soil; S.lat=lat; S.lon=lon; S.label=label; S.viewDay=null; S.weekSel=null;
     S.intro=true;
     S.mud=mudForDay(wx,soil,todayIdxOf(wx));
     el("placeLabel").textContent=label;
@@ -922,7 +1012,7 @@ function setStatus(msg,isErr){
   const s=el("status"); s.textContent=msg||""; s.style.color=isErr?"#E05545":"var(--ink-soft)";
 }
 
-el("btnNow").addEventListener("click",()=>{ S.viewDay=null; render(); });
+el("btnNow").addEventListener("click",()=>{ S.viewDay=null; S.weekSel=null; render(); });
 el("btnGeo").addEventListener("click",useGeo);
 function useGeo(){
   if(!navigator.geolocation){ setStatus("Browseren deler ikke placering. Søg efter en by i stedet.",true); return; }
