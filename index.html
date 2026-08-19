@@ -16,8 +16,11 @@ try{var t=localStorage.getItem("dgTheme");if(t==="light"||t==="dark")document.do
   /* Lys palet er grundtilstanden. Den moerke defineres to gange med samme
      vaerdier: én gang for systemets indstilling, én gang for brugerens eget
      valg, saa et manuelt valg vinder over systemet i begge retninger.
-     Scorefarverne (--s1..s5) og UV-skalaen er ens i begge temaer, fordi de
-     betyder noget bestemt og skal kunne genkendes paa tvaers.               */
+     Scorerampen (--band0..band5) og UV-skalaen beholder deres kuloer i begge
+     temaer, men loeftes i lyshed til moerk baggrund: en mellemmoerk roed paa
+     naesten sort gaar i mudder, fordi oejets farvefylde falder med lysstyrken.
+     Hues er bevaret, saa groen stadig er groen. Fladerne ligger paa heroens
+     hue (281 grader) med brede lyshedsspring, saa kortene loefter sig.      */
   :root{
     color-scheme:light;
     --paper:#EEF1F6; --card:#FFFFFF; --field:#F3F5F9; --track:#E7EBF1;
@@ -25,30 +28,37 @@ try{var t=localStorage.getItem("dgTheme");if(t==="light"||t==="dark")document.do
     --accent:#5A6BF0; --accent-hi:#4757E0; --on-accent:#FFFFFF; --chain:#A8B2C4;
     --sel:#EBEDFE; --hover:#E9EDF5;
     --warn-bg:#FBF6E9; --badge-bg:#F2E4C2; --badge-ink:#8A6400;
-    --s1:#12996B; --s2:#4FA83C; --s3:#D79A00; --s4:#E05545; --s5:#A63E33;
+    --band1:#12996B; --band2:#4FA83C; --band3:#D79A00; --band4:#E07A28; --band5:#E05545; --band0:#A63E33;
     --uv1:#289500; --uv2:#F7E400; --uv3:#F85900; --uv4:#D8001D; --uv5:#6B49C8;
+    --disc-fill:.08; --disc-ring:.18; --glow-op:.32;
     --r:26px;
     --sh:0 1px 2px rgba(17,24,38,.05), 0 10px 26px -16px rgba(17,24,38,.28);
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme=light]){
       color-scheme:dark;
-      --paper:#0D1120; --card:#161B2B; --field:#1E2434; --track:#2A3145;
-      --ink:#E9EDF5; --ink-soft:#96A0B5; --line:#2A3145; --on-ink:#0D1120;
-      --accent:#93A0FF; --accent-hi:#AEB8FF; --on-accent:#101528; --chain:#5A6478;
-      --sel:#242C4A; --hover:#242B3D;
-      --warn-bg:#2C2718; --badge-bg:#4A3F1C; --badge-ink:#E5C67C;
-      --sh:0 1px 2px rgba(0,0,0,.34), 0 12px 30px -18px rgba(0,0,0,.72), inset 0 0 0 1px rgba(255,255,255,.045);
+      --paper:#0A0A19; --card:#1E1F2F; --field:#2B2C3C; --track:#3B3D4E;
+      --ink:#EBECF5; --ink-soft:#A2A3B3; --line:#313342; --on-ink:#0A0A19;
+      --accent:#9DA9FF; --accent-hi:#B9C3FF; --on-accent:#101230; --chain:#A2A3B3;
+      --sel:#282C4A; --hover:#2F3142;
+      --warn-bg:#3A2B11; --badge-bg:#583E08; --badge-ink:#FFC969;
+      --band1:#34BF91; --band2:#8AE15A; --band3:#FFCB6F; --band4:#FF9855; --band5:#FB6250; --band0:#B28583;
+      --uv1:#60CE49; --uv2:#F5E200; --uv3:#FF8E64; --uv4:#FF8A80; --uv5:#B1A1FF;
+      --disc-fill:.16; --disc-ring:.42; --glow-op:.5;
+      --sh:0 1px 2px rgba(0,0,0,.4), 0 14px 34px -18px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,.07);
     }
   }
   :root[data-theme=dark]{
     color-scheme:dark;
-    --paper:#0D1120; --card:#161B2B; --field:#1E2434; --track:#2A3145;
-    --ink:#E9EDF5; --ink-soft:#96A0B5; --line:#2A3145; --on-ink:#0D1120;
-    --accent:#93A0FF; --accent-hi:#AEB8FF; --on-accent:#101528; --chain:#5A6478;
-    --sel:#242C4A; --hover:#242B3D;
-    --warn-bg:#2C2718; --badge-bg:#4A3F1C; --badge-ink:#E5C67C;
-    --sh:0 1px 2px rgba(0,0,0,.34), 0 12px 30px -18px rgba(0,0,0,.72), inset 0 0 0 1px rgba(255,255,255,.045);
+    --paper:#0A0A19; --card:#1E1F2F; --field:#2B2C3C; --track:#3B3D4E;
+    --ink:#EBECF5; --ink-soft:#A2A3B3; --line:#313342; --on-ink:#0A0A19;
+    --accent:#9DA9FF; --accent-hi:#B9C3FF; --on-accent:#101230; --chain:#A2A3B3;
+    --sel:#282C4A; --hover:#2F3142;
+    --warn-bg:#3A2B11; --badge-bg:#583E08; --badge-ink:#FFC969;
+    --band1:#34BF91; --band2:#8AE15A; --band3:#FFCB6F; --band4:#FF9855; --band5:#FB6250; --band0:#B28583;
+    --uv1:#60CE49; --uv2:#F5E200; --uv3:#FF8E64; --uv4:#FF8A80; --uv5:#B1A1FF;
+    --disc-fill:.16; --disc-ring:.42; --glow-op:.5;
+    --sh:0 1px 2px rgba(0,0,0,.4), 0 14px 34px -18px rgba(0,0,0,.8), inset 0 0 0 1px rgba(255,255,255,.07);
   }
   body{background:var(--paper)}
   .card{background:var(--card);border:0;border-radius:var(--r);padding:22px;margin-bottom:14px;box-shadow:var(--sh)}
@@ -60,10 +70,13 @@ try{var t=localStorage.getItem("dgTheme");if(t==="light"||t==="dark")document.do
   .chip[aria-pressed=true]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
   button:hover{background:var(--hover)}
   button.primary:hover{background:var(--accent-hi)}
-  .err{color:var(--s4)}
+  .err{color:var(--band5)}
   /* maalerens spor og indre glimt skal foelge kortets flade, ikke vaere hvide */
   #track{stroke:var(--track)}
   #innerFade stop{stop-color:var(--card)}
+  #discFill{fill-opacity:var(--disc-fill)}
+  #discRing{stroke-opacity:var(--disc-ring)}
+  #glowShadow{flood-opacity:var(--glow-op)}
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -469,16 +482,35 @@ function impVis(vis){
   return 88;
 }
 
+/* Baand- og UV-farverne bor i CSS, saa de kan skifte med temaet. JS laeser dem
+   én gang per tema i stedet for at baere hardcodede hex rundt. */
+const PAL={};
+function readPalette(){
+  const cs=getComputedStyle(document.documentElement);
+  ["band0","band1","band2","band3","band4","band5","uv1","uv2","uv3","uv4","uv5","track"].forEach(n=>{
+    const v=cs.getPropertyValue("--"+n).trim();
+    if(v) PAL[n]=v;
+  });
+}
+/* sort eller hvid tekst, alt efter hvad der staar skarpest paa fladen */
+function onColor(hex){
+  const c=String(hex||"").replace("#","");
+  if(c.length!==6) return "#111111";
+  const ch=i=>{ const v=parseInt(c.substr(i,2),16)/255;
+    return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); };
+  return (0.2126*ch(0)+0.7152*ch(2)+0.0722*ch(4))>0.179 ? "#111111" : "#FFFFFF";
+}
+
 function band(score){
-  if(score>=80) return {c:"#12996B", t:"Perfekte forhold",
+  if(score>=80) return {c:PAL.band1, t:"Perfekte forhold",
     a:"Tag afsted. Der er ikke noget, du behøver tage særlige hensyn til."};
-  if(score>=60) return {c:"#4FA83C", t:"God runde",
+  if(score>=60) return {c:PAL.band2, t:"God runde",
     a:"Fine forhold. Tænk kort over tøjlag og discvalg, så er resten din egen skyld."};
-  if(score>=40) return {c:"#D79A00", t:"Spilbart med tilpasning",
+  if(score>=40) return {c:PAL.band3, t:"Spilbart med tilpasning",
     a:"Det bliver en god runde, hvis du tilpasser dig: tøj efter vejret, en grad mere overstabilt i tasken og lavere linjer."};
-  if(score>=20) return {c:"#E07A28", t:"Krævende runde",
+  if(score>=20) return {c:PAL.band4, t:"Krævende runde",
     a:"Det kan sagtens lade sig gøre, men det bliver arbejde. Overvej en kortere runde og skru forventningerne til scoren ned."};
-  return {c:"#E05545", t:"Bliv hjemme",
+  return {c:PAL.band5, t:"Bliv hjemme",
     a:"Forholdene trækker hårdt. Overvej putting- eller feltræning i stedet, eller find et bedre tidsrum i ugeoversigten."};
 }
 function critReason(h,i,eff){
@@ -490,9 +522,9 @@ function critReason(h,i,eff){
   return "kritisk vejr";
 }
 function uvColor(uv){
-  if(uv==null) return "var(--track)";
-  if(uv<3) return "#289500"; if(uv<6) return "#F7E400";
-  if(uv<8) return "#F85900"; if(uv<11) return "#D8001D"; return "#6B49C8";
+  if(uv==null) return PAL.track;
+  if(uv<3) return PAL.uv1; if(uv<6) return PAL.uv2;
+  if(uv<8) return PAL.uv3; if(uv<11) return PAL.uv4; return PAL.uv5;
 }
 const NAMES={regn:"Regn", vind:"Vind", underlag:"Underlag", temperatur:"Temperatur", uv:"UV", sigt:"Sigtbarhed", lys:"Lys"};
 const DIRS=["N","NØ","Ø","SØ","S","SV","V","NV"];
@@ -784,7 +816,7 @@ function setGauge(target, intro){
 function render(){
   const wx=S.wx, mud=S.mud, i=hourIndex(wx), h=wx.hourly;
   const cur=scoreAt(wx,i,mud);
-  const b=cur.dark? {c:"#A63E33",t:"Mørkt",a:""} : band(cur.score);
+  const b=cur.dark? {c:PAL.band0,t:"Mørkt",a:""} : band(cur.score);
 
   el("pct").style.color=b.c;
   el("headline").textContent=b.t;
@@ -860,7 +892,7 @@ function render(){
   }
   let rows="";
   points.forEach((pt,k)=>{
-    const v=pointVals(wx,pt), s=pointScore(wx,pt,mudUse), sb=s.dark?{c:"#A63E33"}:band(s.score);
+    const v=pointVals(wx,pt), s=pointScore(wx,pt,mudUse), sb=s.dark?{c:PAL.band0}:band(s.score);
     const uv=v.uv_index;
     const focal = S.viewDay==null ? (k===0)
       : (!pt.frac && S.weekSel && S.weekSel.hh!=null && +v.time.slice(11,13)===S.weekSel.hh);
@@ -875,7 +907,7 @@ function render(){
       + '<div class="row"><span class="arrow" style="transform:rotate('+((v.wind_direction_10m||0)+180)+'deg)">↑</span> '
         + dirName(v.wind_direction_10m)+'</div>'
       + '<div class="row">'+fmt(v.wind_speed_10m,1)+'/'+fmt(v.wind_gusts_10m,0)+'</div>'
-      + '<div class="row" style="margin-top:4px"><span class="uvchip" style="background:'+uvColor(uv)+';color:'+((uv!=null&&uv>=6)?"#fff":"#111")+'">'+fmt(uv,1)+'</span></div>'
+      + '<div class="row" style="margin-top:4px"><span class="uvchip" style="background:'+uvColor(uv)+';color:'+onColor(uvColor(uv))+'">'+fmt(uv,1)+'</span></div>'
       + '</div>';
   });
   el("strip").innerHTML=rows;
@@ -949,7 +981,7 @@ function dayMeta(wx,di,mud){
     + " &middot; "+fmt(d.precipitation_sum[di],1)+" mm ("+fmt(d.precipitation_probability_max[di])+" %)"
     + " &middot; "+fmt(d.wind_speed_10m_max[di],1)+"/"+fmt(d.wind_gusts_10m_max[di],0)+" m/s "+dirName(d.wind_direction_10m_dominant[di])
     + " &middot; "+mudLabel(mud)
-    + ' <span class="uvchip" style="background:'+uvColor(uv)+';color:'+((uv!=null&&uv>=6)?"#fff":"#111")+'">UV '+fmt(uv,1)+'</span>';
+    + ' <span class="uvchip" style="background:'+uvColor(uv)+';color:'+onColor(uvColor(uv))+'">UV '+fmt(uv,1)+'</span>';
 }
 
 function renderWeek(){
@@ -1069,7 +1101,7 @@ async function loadFor(lat,lon,label,namePromise){
   }catch(e){ setStatus(e.message,true); }
 }
 function setStatus(msg,isErr){
-  const s=el("status"); s.textContent=msg||""; s.style.color=isErr?"var(--s4)":"var(--ink-soft)";
+  const s=el("status"); s.textContent=msg||""; s.style.color=isErr?"var(--band5)":"var(--ink-soft)";
 }
 
 el("btnNow").addEventListener("click",()=>{ S.viewDay=null; S.weekSel=null; render(); });
@@ -1141,7 +1173,9 @@ function applyTheme(t){
   else root.removeAttribute("data-theme");
   el("themeSwitch").querySelectorAll(".tbtn").forEach(b=>
     b.setAttribute("aria-pressed", b.dataset.theme===t ? "true":"false"));
+  readPalette();
   syncThemeColor();
+  if(S.wx){ S.intro=false; render(); }
 }
 function setTheme(t){
   try{ t==="auto" ? localStorage.removeItem(THEME_KEY) : localStorage.setItem(THEME_KEY,t); }catch(e){}
@@ -1150,7 +1184,7 @@ function setTheme(t){
 el("themeSwitch").querySelectorAll(".tbtn").forEach(b=>
   b.addEventListener("click",()=>setTheme(b.dataset.theme)));
 if(darkMQ && darkMQ.addEventListener){
-  darkMQ.addEventListener("change",()=>{ if(storedTheme()==="auto") syncThemeColor(); });
+  darkMQ.addEventListener("change",()=>{ if(storedTheme()==="auto") applyTheme("auto"); });
 }
 applyTheme(storedTheme());
 
