@@ -1081,22 +1081,48 @@ async function nameForCoords(lat,lon){
   }catch(e){ return null; }
   finally{ clearTimeout(t); }
 }
+/* ---------- husk sidste sted ----------
+   Uden det her starter hver eneste indlaesning forfra: browseren spoerger om
+   placering igen, og bliver den afvist, staar brugeren med en tom side.      */
+const PLACE_KEY="dgPlace";
+function savePlace(){
+  if(S.lat==null || S.lon==null) return;
+  try{ localStorage.setItem(PLACE_KEY, JSON.stringify(
+    {lat:S.lat, lon:S.lon, label:S.label, src:S.src||"search"})); }catch(e){}
+}
+function storedPlace(){
+  try{
+    const j=JSON.parse(localStorage.getItem(PLACE_KEY)||"null");
+    if(j && isFinite(j.lat) && isFinite(j.lon) && j.label) return j;
+  }catch(e){}
+  return null;
+}
+function distKm(la1,lo1,la2,lo2){
+  const R=6371, r=Math.PI/180;
+  const dLa=(la2-la1)*r, dLo=(lo2-lo1)*r;
+  const x=Math.sin(dLa/2)**2 + Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(x)));
+}
+
 function setPlace(name){
   if(!name || name===S.label) return;
   S.label=name;
   el("placeLabel").textContent=name;
+  savePlace();
   if(S.wx) render();
 }
-async function loadFor(lat,lon,label,namePromise){
+async function loadFor(lat,lon,label,namePromise,src){
   setStatus("Henter vejr og underlag…");
   try{
     const [wx,soil]=await Promise.all([getWeather(lat,lon), getSoil(lat,lon)]);
     S.wx=wx; S.soil=soil; S.lat=lat; S.lon=lon; S.label=label; S.viewDay=null; S.weekSel=null;
+    if(src) S.src=src;
     S.intro=true;
     S.mud=mudForDay(wx,soil,todayIdxOf(wx));
     el("placeLabel").textContent=label;
     render();
     setStatus("");
+    savePlace();
     if(namePromise) namePromise.then(n=>{ if(n && S.lat===lat && S.lon===lon) setPlace(n); });
   }catch(e){ setStatus(e.message,true); }
 }
@@ -1105,17 +1131,32 @@ function setStatus(msg,isErr){
 }
 
 el("btnNow").addEventListener("click",()=>{ S.viewDay=null; S.weekSel=null; render(); });
-el("btnGeo").addEventListener("click",useGeo);
-function useGeo(){
-  if(!navigator.geolocation){ setStatus("Browseren deler ikke placering. Søg efter en by i stedet.",true); return; }
-  setStatus("Finder din position…");
+el("btnGeo").addEventListener("click",()=>useGeo(false));
+/* Én fejlbesked til alting skjulte, hvad der gik galt. De tre tilfaelde
+   kraever hver sin handling af brugeren.                                  */
+function geoError(err){
+  const c=err && err.code;
+  if(c===1) return "Adgang til placering er slået fra for siden. Slå den til i browserens indstillinger, eller søg efter en by i feltet ovenfor.";
+  if(c===2) return "Din position kunne ikke bestemmes. Søg efter en by i feltet ovenfor.";
+  if(c===3) return "Det tog for lang tid at finde din position. Prøv igen, eller søg efter en by i feltet ovenfor.";
+  return "Kunne ikke hente din position. Søg efter en by i feltet ovenfor.";
+}
+/* quiet: baggrundsopdatering oven paa et husket sted, som ikke maa larme */
+function useGeo(quiet){
+  if(!navigator.geolocation){
+    if(!quiet) setStatus("Browseren deler ikke placering. Søg efter en by i stedet.",true);
+    return;
+  }
+  if(!quiet) setStatus("Finder din position…");
   navigator.geolocation.getCurrentPosition(
     p=>{
       const lat=p.coords.latitude, lon=p.coords.longitude;
-      loadFor(lat,lon,"Din position",nameForCoords(lat,lon));
+      /* flyttet under 3 km siden sidst: behold det huskede navn og undgaa en gentegning */
+      if(quiet && S.lat!=null && distKm(S.lat,S.lon,lat,lon)<3){ S.src="geo"; savePlace(); return; }
+      loadFor(lat,lon,"Din position",nameForCoords(lat,lon),"geo");
     },
-    ()=>setStatus("Placering blev afvist. Søg efter en by i feltet ved siden af.",true),
-    {enableHighAccuracy:false, timeout:10000, maximumAge:600000}
+    err=>{ if(!quiet) setStatus(geoError(err),true); },
+    {enableHighAccuracy:false, timeout:15000, maximumAge:600000}
   );
 }
 el("btnSearch").addEventListener("click",doSearch);
@@ -1138,13 +1179,21 @@ async function doSearch(){
     }));
   }catch(e){ setStatus("Søgningen fejlede. Tjek din netværksforbindelse.",true); }
 }
+const TERRAIN_KEY="dgTerrain";
+function markTerrain(){
+  el("terrainChips").querySelectorAll(".chip").forEach(c=>
+    c.setAttribute("aria-pressed", c.dataset.terrain===S.terrain ? "true":"false"));
+}
 el("terrainChips").querySelectorAll(".chip").forEach(chip=>{
   chip.addEventListener("click",()=>{
     S.terrain=chip.dataset.terrain;
-    el("terrainChips").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c===chip?"true":"false"));
+    try{ localStorage.setItem(TERRAIN_KEY,S.terrain); }catch(e){}
+    markTerrain();
     if(S.wx) render();
   });
 });
+try{ const t=localStorage.getItem(TERRAIN_KEY); if(TERRAIN[t]) S.terrain=t; }catch(e){}
+markTerrain();
 
 /* ---------- farvetema ----------
    Tre tilstande: auto foelger systemet, light og dark er brugerens eget valg.
@@ -1188,7 +1237,18 @@ if(darkMQ && darkMQ.addEventListener){
 }
 applyTheme(storedTheme());
 
-useGeo();
+/* Opstart: et husket sted vises med det samme, saa siden aldrig staar tom
+   mens browseren spoerger om placering — eller hvis den bliver afvist.
+   Kun en position, der oprindeligt kom fra GPS, opdateres i baggrunden;
+   en by, brugeren selv har valgt, bliver staaende.                        */
+const boot = storedPlace();
+if(boot){
+  S.src = boot.src || "search";
+  loadFor(boot.lat, boot.lon, boot.label, null, S.src);
+  if(S.src === "geo") useGeo(true);
+}else{
+  useGeo(false);
+}
 </script>
 </body>
 </html>
