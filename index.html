@@ -5,29 +5,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DG vejrtjek</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Instrument+Serif:ital@1&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<meta name="theme-color" content="#F2F4F7">
+<meta name="theme-color" content="#EEF1F6" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#0D1120" media="(prefers-color-scheme:dark)">
+<script>
+/* Saettes foer foerste maling, saa et gemt moerkt valg ikke blinker hvidt. */
+try{var t=localStorage.getItem("dgTheme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}
+</script>
 <style>
 
+  /* Lys palet er grundtilstanden. Den moerke defineres to gange med samme
+     vaerdier: én gang for systemets indstilling, én gang for brugerens eget
+     valg, saa et manuelt valg vinder over systemet i begge retninger.
+     Scorefarverne (--s1..s5) og UV-skalaen er ens i begge temaer, fordi de
+     betyder noget bestemt og skal kunne genkendes paa tvaers.               */
   :root{
+    color-scheme:light;
     --paper:#EEF1F6; --card:#FFFFFF; --field:#F3F5F9; --track:#E7EBF1;
-    --ink:#111826; --ink-soft:#6B7688; --line:#E3E8EF;
-    --accent:#5A6BF0; --on-accent:#FFFFFF; --chain:#A8B2C4;
+    --ink:#111826; --ink-soft:#6B7688; --line:#E3E8EF; --on-ink:#FFFFFF;
+    --accent:#5A6BF0; --accent-hi:#4757E0; --on-accent:#FFFFFF; --chain:#A8B2C4;
+    --sel:#EBEDFE; --hover:#E9EDF5;
+    --warn-bg:#FBF6E9; --badge-bg:#F2E4C2; --badge-ink:#8A6400;
     --s1:#12996B; --s2:#4FA83C; --s3:#D79A00; --s4:#E05545; --s5:#A63E33;
     --uv1:#289500; --uv2:#F7E400; --uv3:#F85900; --uv4:#D8001D; --uv5:#6B49C8;
     --r:26px;
     --sh:0 1px 2px rgba(17,24,38,.05), 0 10px 26px -16px rgba(17,24,38,.28);
   }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme=light]){
+      color-scheme:dark;
+      --paper:#0D1120; --card:#161B2B; --field:#1E2434; --track:#2A3145;
+      --ink:#E9EDF5; --ink-soft:#96A0B5; --line:#2A3145; --on-ink:#0D1120;
+      --accent:#93A0FF; --accent-hi:#AEB8FF; --on-accent:#101528; --chain:#5A6478;
+      --sel:#242C4A; --hover:#242B3D;
+      --warn-bg:#2C2718; --badge-bg:#4A3F1C; --badge-ink:#E5C67C;
+      --sh:0 1px 2px rgba(0,0,0,.34), 0 12px 30px -18px rgba(0,0,0,.72), inset 0 0 0 1px rgba(255,255,255,.045);
+    }
+  }
+  :root[data-theme=dark]{
+    color-scheme:dark;
+    --paper:#0D1120; --card:#161B2B; --field:#1E2434; --track:#2A3145;
+    --ink:#E9EDF5; --ink-soft:#96A0B5; --line:#2A3145; --on-ink:#0D1120;
+    --accent:#93A0FF; --accent-hi:#AEB8FF; --on-accent:#101528; --chain:#5A6478;
+    --sel:#242C4A; --hover:#242B3D;
+    --warn-bg:#2C2718; --badge-bg:#4A3F1C; --badge-ink:#E5C67C;
+    --sh:0 1px 2px rgba(0,0,0,.34), 0 12px 30px -18px rgba(0,0,0,.72), inset 0 0 0 1px rgba(255,255,255,.045);
+  }
   body{background:var(--paper)}
   .card{background:var(--card);border:0;border-radius:var(--r);padding:22px;margin-bottom:14px;box-shadow:var(--sh)}
   .factor + .factor{border-top:1px solid var(--line)}
   .hr{background:var(--field)}
-  .hr.best{background:#EBEDFE;box-shadow:inset 0 0 0 1.5px var(--accent)}
+  .hr.best{background:var(--sel);box-shadow:inset 0 0 0 1.5px var(--accent)}
   .hr.now{box-shadow:inset 0 0 0 2px var(--ink)}
-  .course.sel{background:#EBEDFE;box-shadow:inset 0 0 0 1.5px var(--accent)}
-  .chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
-  button:hover{background:#E9EDF5}
-  button.primary:hover{background:#4757E0}
+  .course.sel{background:var(--sel);box-shadow:inset 0 0 0 1.5px var(--accent)}
+  .chip[aria-pressed=true]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+  button:hover{background:var(--hover)}
+  button.primary:hover{background:var(--accent-hi)}
   .err{color:var(--s4)}
+  /* maalerens spor og indre glimt skal foelge kortets flade, ikke vaere hvide */
+  #track{stroke:var(--track)}
+  #innerFade stop{stop-color:var(--card)}
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -120,7 +156,7 @@
          border-radius:10px;margin-left:-8px;overflow:hidden}
   .wkday .dn,.wkday .dd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .wkday:hover{background:var(--field)}
-  .wkday.on{background:#EBEDFE}
+  .wkday.on{background:var(--sel)}
   .wkc{height:28px;border-radius:5px;cursor:pointer;display:block;background:var(--track)}
   .wkc.hit:hover{box-shadow:inset 0 0 0 2px var(--ink)}
   .wkc.sel{box-shadow:inset 0 0 0 2.5px var(--ink)}
@@ -166,11 +202,11 @@
   .flabel{display:flex;align-items:center;gap:7px}
   .ficon{display:inline-flex;flex:0 0 17px}
   .ficon svg{width:17px;height:17px}
-  .factor.worst{background:#FBF6E9;border-radius:16px;padding:14px;margin:4px -14px;box-shadow:inset 3px 0 0 #D79A00}
+  .factor.worst{background:var(--warn-bg);border-radius:16px;padding:14px;margin:4px -14px;box-shadow:inset 3px 0 0 #D79A00}
   .factor.worst + .factor{border-top:0}
   .factor + .factor.worst{border-top:0}
   .wbadge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;
-          background:#F2E4C2;color:#8A6400;border-radius:999px;padding:2px 8px;margin-left:4px;white-space:nowrap}
+          background:var(--badge-bg);color:var(--badge-ink);border-radius:999px;padding:2px 8px;margin-left:4px;white-space:nowrap}
   .wic{display:flex;justify-content:center;color:var(--ink-soft);margin:3px 0 1px}
   .wic svg{width:15px;height:15px}
 
@@ -208,6 +244,17 @@
             margin-top:14px;padding:8px 14px;border-radius:999px;
             background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13)}
   .hero .sub{color:#fff;font-size:13px;font-weight:600}
+  /* heroen er moerk i begge temaer, saa temavaelgeren styles mod det, ikke mod paletten */
+  .herofoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .tsw{display:flex;gap:2px;padding:3px;border-radius:999px;flex:none;
+       background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13)}
+  .tbtn{display:flex;align-items:center;justify-content:center;width:40px;height:36px;padding:0;
+        border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.62);cursor:pointer;
+        transition:background .15s ease,color .15s ease}
+  .tbtn svg{width:17px;height:17px}
+  .tbtn:hover{background:rgba(255,255,255,.10);color:#fff}
+  .tbtn[aria-pressed=true]{background:rgba(255,255,255,.92);color:#1B1642}
+  .tbtn:focus-visible{outline:2px solid #FF9D57;outline-offset:2px}
   @keyframes heroFloat{
     0%,100%{transform:translate(-50%,-50%)}
     50%    {transform:translate(-50%,calc(-50% - 6px))}
@@ -244,9 +291,22 @@
     </svg>
     <div class="hero-in">
       <h1 class="hero-h">Tid til at <em>ramme træer?</em></h1>
-      <div class="hero-loc">
-        <span class="livedot" aria-hidden="true"></span>
-        <span class="sub" id="placeLabel">Finder position…</span>
+      <div class="herofoot">
+        <div class="hero-loc">
+          <span class="livedot" aria-hidden="true"></span>
+          <span class="sub" id="placeLabel">Finder position…</span>
+        </div>
+        <div class="tsw" id="themeSwitch" role="group" aria-label="Farvetema">
+          <button type="button" class="tbtn" data-theme="auto" aria-pressed="true" title="Følg systemet" aria-label="Følg systemets tema">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8.5 20.5h7M12 17v3.5"/></svg>
+          </button>
+          <button type="button" class="tbtn" data-theme="light" aria-pressed="false" title="Lyst tema" aria-label="Lyst tema">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.1"/><path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M18.7 5.3l-1.5 1.5M6.8 17.2l-1.5 1.5"/></svg>
+          </button>
+          <button type="button" class="tbtn" data-theme="dark" aria-pressed="false" title="Mørkt tema" aria-label="Mørkt tema">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.3A8.6 8.6 0 0 1 9.7 3.5a8.6 8.6 0 1 0 10.8 10.8z"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -430,7 +490,7 @@ function critReason(h,i,eff){
   return "kritisk vejr";
 }
 function uvColor(uv){
-  if(uv==null) return "#DDD";
+  if(uv==null) return "var(--track)";
   if(uv<3) return "#289500"; if(uv<6) return "#F7E400";
   if(uv<8) return "#F85900"; if(uv<11) return "#D8001D"; return "#6B49C8";
 }
@@ -1009,7 +1069,7 @@ async function loadFor(lat,lon,label,namePromise){
   }catch(e){ setStatus(e.message,true); }
 }
 function setStatus(msg,isErr){
-  const s=el("status"); s.textContent=msg||""; s.style.color=isErr?"#E05545":"var(--ink-soft)";
+  const s=el("status"); s.textContent=msg||""; s.style.color=isErr?"var(--s4)":"var(--ink-soft)";
 }
 
 el("btnNow").addEventListener("click",()=>{ S.viewDay=null; S.weekSel=null; render(); });
@@ -1053,6 +1113,46 @@ el("terrainChips").querySelectorAll(".chip").forEach(chip=>{
     if(S.wx) render();
   });
 });
+
+/* ---------- farvetema ----------
+   Tre tilstande: auto foelger systemet, light og dark er brugerens eget valg.
+   Valget gemmes lokalt, og et gemt valg saettes allerede i <head>, saa siden
+   ikke naar at blinke i det forkerte tema.                                   */
+const THEME_KEY="dgTheme", THEMES=["auto","light","dark"];
+const darkMQ = window.matchMedia ? window.matchMedia("(prefers-color-scheme:dark)") : null;
+
+function storedTheme(){
+  try{ const t=localStorage.getItem(THEME_KEY); return THEMES.indexOf(t)>0 ? t : "auto"; }
+  catch(e){ return "auto"; }
+}
+function syncThemeColor(){
+  /* browserens adresselinje skal matche den flade siden faktisk har */
+  const bg=getComputedStyle(document.body).backgroundColor;
+  if(!bg) return;
+  document.querySelectorAll("meta[name=theme-color]").forEach(m=>m.remove());
+  const m=document.createElement("meta");
+  m.setAttribute("name","theme-color");
+  m.setAttribute("content",bg);
+  document.head.appendChild(m);
+}
+function applyTheme(t){
+  const root=document.documentElement;
+  if(t==="light"||t==="dark") root.setAttribute("data-theme",t);
+  else root.removeAttribute("data-theme");
+  el("themeSwitch").querySelectorAll(".tbtn").forEach(b=>
+    b.setAttribute("aria-pressed", b.dataset.theme===t ? "true":"false"));
+  syncThemeColor();
+}
+function setTheme(t){
+  try{ t==="auto" ? localStorage.removeItem(THEME_KEY) : localStorage.setItem(THEME_KEY,t); }catch(e){}
+  applyTheme(t);
+}
+el("themeSwitch").querySelectorAll(".tbtn").forEach(b=>
+  b.addEventListener("click",()=>setTheme(b.dataset.theme)));
+if(darkMQ && darkMQ.addEventListener){
+  darkMQ.addEventListener("change",()=>{ if(storedTheme()==="auto") syncThemeColor(); });
+}
+applyTheme(storedTheme());
 
 useGeo();
 </script>
